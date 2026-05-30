@@ -1,0 +1,13 @@
+/* App level small adjustments */
+main { min-height: calc(100vh - 160px); }
+
+.hero { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:36px 0; }
+.hero .hero-card { margin-top:16px; max-width:760px; width:100%; }
+.hero h1 { margin:0; font-size:32px; }
+.hero p { margin:0; color:var(--text-muted) }
+
+.features { margin-top:28px }
+.features-grid .feature-card { padding:16px; border-radius:10px; display:flex; flex-direction:column; gap:8px }
+.feature-accent { border-top:4px solid var(--hiper-orange); }
+
+.portal-description { margin-top:28px }
