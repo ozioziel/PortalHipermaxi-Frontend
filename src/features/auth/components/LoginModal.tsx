@@ -59,9 +59,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   const handleEnter = () => {
     setError('');
-    if (account === 'cuenta@gmail.com' && username === 'usuario' && password === '12345678') {
+    const VALID_ACCOUNT = 'cuenta@gmail.com';
+    const VALID_USERNAME = 'usuario';
+    const VALID_PASSWORD = '12345678';
+
+    const isValid = account.trim() === VALID_ACCOUNT && username.trim() === VALID_USERNAME && password === VALID_PASSWORD;
+    if (isValid) {
       onClose();
-      navigate('/proveedor/acceso');
+      navigate('/productos/nuevo');
     } else {
       setError('Datos incorrectos. Usa las credenciales de prueba.');
     }
