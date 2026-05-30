@@ -1,25 +1,35 @@
 import React, {useState} from 'react';
+import {useNavigate, Link} from 'react-router-dom';
 import AppLogo from '../ui/AppLogo';
 import {AppButton} from '../ui/AppButton';
-import StartPanelModal from '../../../features/products/components/StartPanelModal';
+import LoginModal from '../../../features/auth/components/LoginModal';
 
 export const Navbar: React.FC = () => {
-  const [openStart, setOpenStart] = useState(false);
+  const navigate = useNavigate();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
     <header style={{background:'white',padding:'12px 0',boxShadow:'0 1px 0 rgba(0,0,0,0.04)'}}>
       <div className="container" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <AppLogo size={36} />
-          <div style={{fontWeight:700}}>Portal Hipermaxi</div>
+          <Link to="/" style={{display:'flex',alignItems:'center',gap:12,textDecoration:'none',color:'inherit'}}>
+            <AppLogo size={36} />
+            <div style={{fontWeight:700}}>Portal Hipermaxi</div>
+          </Link>
         </div>
         <div style={{display:'flex',gap:8,alignItems:'center'}}>
           <AppButton variant="secondary">Soporte y Ayudas</AppButton>
-          <AppButton variant="primary" onClick={() => setOpenStart(true)}>Iniciar</AppButton>
+          <AppButton
+            variant="secondary"
+            onClick={() => navigate('/proveedor/acceso')}
+            style={{background: '#ffffff', border: '1px solid #f66014', color: '#f66014'}}
+          >
+            Soy nuevo
+          </AppButton>
+          <AppButton variant="primary" onClick={() => setIsLoginOpen(true)}>Iniciar</AppButton>
+          <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
         </div>
       </div>
-
-      {openStart && <StartPanelModal onClose={() => setOpenStart(false)} />}
     </header>
   );
 };
