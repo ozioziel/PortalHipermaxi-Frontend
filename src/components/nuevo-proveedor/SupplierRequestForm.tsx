@@ -8,6 +8,7 @@ import SupplierRequestSummary from './SupplierRequestSummary';
 import SupplierRolesSection from './SupplierRolesSection';
 import useSupplierFormGuide from '../../hooks/nuevo-proveedor/useSupplierFormGuide';
 import useAutoGuide from '../../hooks/useAutoGuide';
+import FormProgressBar from '../../core/components/ui/FormProgressBar';
 import {
   initialSupplierRequestFormData,
   validateSupplierRequest,
@@ -68,6 +69,7 @@ export const SupplierRequestForm: React.FC = () => {
   const [formData, setFormData] = useState<SupplierRequestFormData>(
     initialSupplierRequestFormData,
   );
+  const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState<SupplierRequestErrors>(createEmptyErrors);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,11 +87,69 @@ export const SupplierRequestForm: React.FC = () => {
     });
   };
 
+  const sectionFields: Record<number, SupplierRequestField[]> = {
+    0: ['providerName', 'legalName', 'nit'], // General
+    1: [
+      'hubManagerName',
+      'hubManagerEmail',
+      'hubManagerPhone',
+      'systemsManagerName',
+      'systemsManagerEmail',
+      'systemsManagerPhone',
+    ], // Encargados
+    2: [
+      'salesManagerName',
+      'salesManagerEmail',
+      'salesManagerPhone',
+      'sellerName',
+      'sellerPhone',
+    ], // Roles
+    3: ['providerCode', 'region'], // Catálogo
+    4: [], // Resumen/confirmación
+  };
+
+  const validateSection = (step: number) => {
+    const validation = validateSupplierRequest(formData);
+    const relevantFields = sectionFields[step] || [];
+
+    // Extract only errors for relevant fields
+    const sectionErrors: SupplierRequestErrors = {};
+    relevantFields.forEach((f) => {
+      if (validation[f]) sectionErrors[f] = validation[f];
+    });
+
+    // Update errors state: replace relevant fields, keep others
+    setErrors((current) => {
+      const next = { ...current } as SupplierRequestErrors;
+      relevantFields.forEach((f) => {
+        if (validation[f]) next[f] = validation[f];
+        else delete (next as any)[f];
+      });
+      return next;
+    });
+
+    return Object.keys(sectionErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    // Validate current section before advancing
+    const ok = validateSection(currentStep);
+    if (!ok) {
+      return;
+    }
+    setCurrentStep((s) => Math.min(s + 1, 4));
+  };
+
+  const handleBack = () => {
+    setCurrentStep((s) => Math.max(s - 1, 0));
+  };
+
   const handleClearForm = () => {
     setFormData(initialSupplierRequestFormData);
     setErrors(createEmptyErrors());
     setHasAttemptedSubmit(false);
     setIsSubmitting(false);
+    setCurrentStep(0);
   };
 
   const handleSubmit = () => {
@@ -129,6 +189,20 @@ export const SupplierRequestForm: React.FC = () => {
   return (
     <>
       <div style={{ display: 'grid', gap: 16 }}>
+        <FormProgressBar
+          totalSteps={5}
+          currentStep={currentStep}
+          completedSteps={(() => {
+            const data = formData;
+            const general = Boolean(data.providerName.trim() && data.legalName.trim() && data.nit.trim());
+            const hub = Boolean(data.hubManagerName.trim() && data.hubManagerEmail.trim() && data.hubManagerPhone.trim());
+            const roles = Boolean(data.salesManagerName.trim() || data.systemsManagerName.trim() || data.sellerName.trim());
+            const catalog = Boolean(data.providerCode.trim() && data.region.trim());
+            const summary = general && hub && roles && catalog;
+            return [general, hub, roles, catalog, summary].filter(Boolean).length;
+          })()}
+          labels={["General","Encargados","Roles","Catálogo","Resumen"]}
+        />
         <section className="card" style={supportCardStyle}>
           <div>
             <h2 style={{ margin: '0 0 8px 0', fontSize: 20 }}>Guía visual del formulario</h2>
@@ -146,63 +220,104 @@ export const SupplierRequestForm: React.FC = () => {
             Iniciar guía
           </button>
         </section>
-
-        <SupplierGeneralDataSection
-          formData={formData}
-          errors={errors}
-          onFieldChange={handleFieldChange}
-        />
-
-        <SupplierRolesSection
-          formData={formData}
-          errors={errors}
-          onFieldChange={handleFieldChange}
-        />
-
-        <SupplierCatalogSection
-          formData={formData}
-          errors={errors}
-          onFieldChange={handleFieldChange}
-        />
-
-        <SupplierRequestSummary formData={formData} />
-
-        <section className="card">
-          <div style={actionRowStyle}>
+        {/* Render sections one at a time based on currentStep */}
+        <div>
+          {currentStep === 0 && (
             <div>
-              <h2 style={{ margin: '0 0 6px 0', fontSize: 22 }}>Enviar solicitud</h2>
-              <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-                Verifique la información y envíe la solicitud para revisión del Área de
-                Compras.
-              </p>
+              <SupplierGeneralDataSection
+                formData={formData}
+                errors={errors}
+                onFieldChange={handleFieldChange}
+              />
+            </div>
+          )}
+
+          {currentStep === 1 && (
+            <div>
+              <SupplierRolesSection
+                formData={formData}
+                errors={errors}
+                onFieldChange={handleFieldChange}
+              />
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div>
+              <SupplierCatalogSection
+                formData={formData}
+                errors={errors}
+                onFieldChange={handleFieldChange}
+              />
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div>
+              <SupplierRequestSummary formData={formData} />
+            </div>
+          )}
+
+          {currentStep === 4 && (
+            <div>
+              <section className="card">
+                <div style={actionRowStyle}>
+                  <div>
+                    <h2 style={{ margin: '0 0 6px 0', fontSize: 22 }}>Enviar solicitud</h2>
+                    <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+                      Verifique la información y envíe la solicitud para revisión del Área de
+                      Compras.
+                    </p>
+                  </div>
+
+                  <div style={actionGroupStyle}>
+                    <button
+                      className="btn btn-secondary"
+                      style={secondaryButtonStyle}
+                      onClick={() => navigate('/')}
+                    >
+                      Volver
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      style={secondaryButtonStyle}
+                      onClick={handleClearForm}
+                    >
+                      Limpiar formulario
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      data-guide="supplier-submit"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Enviando solicitud...' : 'Enviar solicitud'}
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* Navigation buttons visible at the bottom of each section */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
+            <div>
+              {currentStep > 0 && (
+                <button className="btn btn-secondary" style={secondaryButtonStyle} onClick={() => handleBack()}>
+                  Anterior
+                </button>
+              )}
             </div>
 
-            <div style={actionGroupStyle}>
-              <button
-                className="btn btn-secondary"
-                style={secondaryButtonStyle}
-                onClick={() => navigate('/')}
-              >
-                Volver
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={secondaryButtonStyle}
-                onClick={handleClearForm}
-              >
-                Limpiar formulario
-              </button>
-              <button
-                className="btn btn-primary"
-                data-guide="supplier-submit"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Enviando solicitud...' : 'Enviar solicitud'}
-              </button>
+            <div>
+              {currentStep < 4 && (
+                <button className="btn btn-primary" onClick={() => handleNext()}>
+                  Siguiente
+                </button>
+              )}
             </div>
           </div>
-        </section>
+        </div>
       </div>
 
       <SupplierFormGuideOverlay
