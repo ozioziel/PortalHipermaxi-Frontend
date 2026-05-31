@@ -7,6 +7,7 @@ import SupplierRequestSuccess from './SupplierRequestSuccess';
 import SupplierRequestSummary from './SupplierRequestSummary';
 import SupplierRolesSection from './SupplierRolesSection';
 import useSupplierFormGuide from '../../hooks/nuevo-proveedor/useSupplierFormGuide';
+import useAutoGuide from '../../hooks/useAutoGuide';
 import {
   initialSupplierRequestFormData,
   validateSupplierRequest,
@@ -63,6 +64,7 @@ const createEmptyErrors = (): SupplierRequestErrors => ({});
 export const SupplierRequestForm: React.FC = () => {
   const navigate = useNavigate();
   const guide = useSupplierFormGuide();
+  useAutoGuide(guide.openGuide); // abre la guía si el chat navegó con ?guide=1
   const [formData, setFormData] = useState<SupplierRequestFormData>(
     initialSupplierRequestFormData,
   );

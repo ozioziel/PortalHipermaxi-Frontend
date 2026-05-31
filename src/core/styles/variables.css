@@ -1,10 +1,50 @@
 :root{
+  /* Brand */
   --hiper-orange: #f66014;
   --hiper-orange-dark: #ba5400;
+  --hiper-orange-soft: #fff1e9;
   --hiper-blue: #003f91;
+  --hiper-blue-dark: #002b66;
+  --hiper-blue-soft: #eef4ff;
+
+  /* Surfaces & text */
   --white: #ffffff;
-  --light-bg: #f7f7f7;
+  --light-bg: #f3f5f9;
+  --surface: #ffffff;
+  --surface-muted: #f7f9fc;
+  --border: #e6e9ef;
+  --border-strong: #d4d9e2;
   --text-dark: #1f2937;
   --text-muted: #6b7280;
-  --max-width: 1100px;
+
+  /* Accents */
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  /* Gradients */
+  --grad-brand: linear-gradient(135deg, #f66014 0%, #ff7a3d 100%);
+  --grad-hero: radial-gradient(1200px 480px at 50% -10%, #eaf1ff 0%, rgba(234,241,255,0) 60%);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(16,24,40,0.06), 0 1px 3px rgba(16,24,40,0.05);
+  --shadow-md: 0 6px 18px rgba(31,41,55,0.08);
+  --shadow-lg: 0 18px 40px rgba(31,41,55,0.14);
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
+
+  --max-width: 1140px;
 }

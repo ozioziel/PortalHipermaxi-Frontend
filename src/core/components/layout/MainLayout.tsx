@@ -1,6 +1,7 @@
 import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import SupportChatWidget from '../../../features/support/components/SupportChatWidget';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({children}) => {
         <div className="container">{children}</div>
       </main>
       <Footer />
+      <SupportChatWidget />
     </div>
   );
 };
