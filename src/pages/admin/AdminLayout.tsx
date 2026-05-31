@@ -1,6 +1,40 @@
 import React from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
+import '../../features/admin/admin.css';
+
+const initialsFromEmail = (email: string | undefined) => {
+  if (!email) return 'AD';
+  return email.slice(0, 2).toUpperCase();
+};
+
+const adminLinks = [
+  {
+    to: '/admin/dashboard',
+    title: 'Dashboard',
+    hint: 'Métricas, filtros y comportamiento general',
+  },
+  {
+    to: '/admin/trazabilidad',
+    title: 'Trazabilidad',
+    hint: 'Eventos, fechas y actividad por módulo',
+  },
+  {
+    to: '/admin/preguntas-frecuentes',
+    title: 'Preguntas frecuentes',
+    hint: 'Consultas más repetidas del asistente',
+  },
+  {
+    to: '/admin/interacciones-ia',
+    title: 'Interacciones IA',
+    hint: 'Rendimiento, errores y fallback del chat',
+  },
+  {
+    to: '/admin/actividad-usuarios',
+    title: 'Actividad usuarios',
+    hint: 'Último movimiento por cuenta y módulo',
+  },
+];
 
 const AdminLayout: React.FC = () => {
   const auth = useAuth();
@@ -12,28 +46,55 @@ const AdminLayout: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      <header style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '16px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+    <div className="admin-shell">
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar__brand">
+          <span className="admin-sidebar__eyebrow">Panel Admin</span>
+          <h1>Hipermaxi Trace</h1>
+          <p>Dashboard de trazabilidad, soporte e interacción operativa del portal.</p>
+        </div>
+
+        <div className="admin-user-chip">
+          <span className="admin-user-chip__avatar">{initialsFromEmail(auth.user?.email)}</span>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>Admin Traceability</div>
-            <div style={{ color: '#475569', fontSize: 13 }}>{auth.user?.email}</div>
+            <div className="admin-user-chip__name">{auth.user?.email ?? 'Administrador'}</div>
+            <p className="admin-user-chip__meta">Acceso restringido a rol administrador</p>
           </div>
-          <button style={{ background: '#f66014', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 6, cursor: 'pointer' }} onClick={handleLogout}>
-            Salir
+        </div>
+
+        <nav className="admin-nav" aria-label="Navegación del administrador">
+          {adminLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) => `admin-nav__link ${isActive ? 'is-active' : ''}`}
+            >
+              <span className="admin-nav__title">{link.title}</span>
+              <span className="admin-nav__hint">{link.hint}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="admin-sidebar__footer">
+          <p>Este espacio no comparte componentes visuales con el flujo cliente.</p>
+          <button type="button" className="btn btn-primary" onClick={handleLogout}>
+            Cerrar sesión
           </button>
         </div>
-      </header>
+      </aside>
 
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 20, padding: '24px 0' }}>
-        <nav style={{ display: 'grid', gap: 12 }}>
-          <Link to="/admin/dashboard" className="card admin-link-card">Dashboard</Link>
-          <Link to="/admin/trazabilidad" className="card admin-link-card">Trazabilidad</Link>
-          <Link to="/admin/preguntas-frecuentes" className="card admin-link-card">Preguntas frecuentes</Link>
-          <Link to="/admin/interacciones-ia" className="card admin-link-card">Interacciones IA</Link>
-          <Link to="/admin/actividad-usuarios" className="card admin-link-card">Actividad usuarios</Link>
-        </nav>
-        <main>
+      <div className="admin-main">
+        <header className="admin-topbar">
+          <span className="admin-topbar__badge">Monitoreo operativo</span>
+          <div className="admin-topbar__meta">
+            <div className="admin-topbar__text">
+              <strong>Entorno administrativo protegido</strong>
+              <span>Solo visible para usuarios con rol `admin`.</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="admin-content">
           <Outlet />
         </main>
       </div>

@@ -1,10 +1,10 @@
 import React from 'react';
 import AdminDataTable from './AdminDataTable';
 import AdminStatusBadge from './AdminStatusBadge';
-import type { AiInteractionRecord } from '../types';
+import type { TraceabilityEvent } from '../types';
 
-interface AiInteractionsTableProps {
-  rows: AiInteractionRecord[];
+interface TraceabilityTableProps {
+  rows: TraceabilityEvent[];
 }
 
 const formatDateTime = (value: string) =>
@@ -16,17 +16,17 @@ const formatDateTime = (value: string) =>
     minute: '2-digit',
   });
 
-const AiInteractionsTable: React.FC<AiInteractionsTableProps> = ({ rows }) => {
+const TraceabilityTable: React.FC<TraceabilityTableProps> = ({ rows }) => {
   return (
     <AdminDataTable
       rows={rows}
       rowKey={(row) => row.id}
-      emptyMessage="No hay interacciones de IA en el rango seleccionado."
+      emptyMessage="No se encontraron eventos para los filtros seleccionados."
       defaultSort={{ columnId: 'createdAt', direction: 'desc' }}
       columns={[
         {
           id: 'createdAt',
-          label: 'Fecha',
+          label: 'Fecha y hora',
           sortable: true,
           sortValue: (row) => new Date(row.createdAt).getTime(),
           render: (row) => formatDateTime(row.createdAt),
@@ -36,24 +36,21 @@ const AiInteractionsTable: React.FC<AiInteractionsTableProps> = ({ rows }) => {
           label: 'Usuario',
           sortable: true,
           sortValue: (row) => row.userName,
-          render: (row) => (
-            <div>
-              <strong>{row.userName}</strong>
-              <div className="admin-table__subtext">{row.userEmail}</div>
-            </div>
-          ),
+          render: (row) => row.userName,
         },
         {
-          id: 'question',
-          label: 'Pregunta',
+          id: 'userEmail',
+          label: 'Correo',
           sortable: true,
-          sortValue: (row) => row.question,
-          render: (row) => row.question,
+          sortValue: (row) => row.userEmail,
+          render: (row) => row.userEmail,
         },
         {
-          id: 'responseSummary',
-          label: 'Resumen de respuesta',
-          render: (row) => row.responseSummary,
+          id: 'role',
+          label: 'Rol',
+          sortable: true,
+          sortValue: (row) => row.role,
+          render: (row) => row.role,
         },
         {
           id: 'module',
@@ -61,6 +58,18 @@ const AiInteractionsTable: React.FC<AiInteractionsTableProps> = ({ rows }) => {
           sortable: true,
           sortValue: (row) => row.module,
           render: (row) => row.module,
+        },
+        {
+          id: 'action',
+          label: 'Acción',
+          sortable: true,
+          sortValue: (row) => row.action,
+          render: (row) => row.action,
+        },
+        {
+          id: 'description',
+          label: 'Descripción',
+          render: (row) => row.description,
         },
         {
           id: 'status',
@@ -74,4 +83,4 @@ const AiInteractionsTable: React.FC<AiInteractionsTableProps> = ({ rows }) => {
   );
 };
 
-export default AiInteractionsTable;
+export default TraceabilityTable;

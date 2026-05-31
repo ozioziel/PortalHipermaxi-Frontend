@@ -1,61 +1,121 @@
 import React, { useEffect, useState } from 'react';
-import { HiperFlowApi } from '../../features/support/services/HiperFlowApi';
-import { mockAiInteractions } from '../../features/admin/data/mockAdminDashboard';
+import AiInteractionsTable from '../../features/admin/components/AiInteractionsTable';
+import AiUsageChart from '../../features/admin/components/AiUsageChart';
+import ChartCard from '../../features/admin/components/ChartCard';
+import DashboardFilters from '../../features/admin/components/DashboardFilters';
+import FrequentQuestionsChart from '../../features/admin/components/FrequentQuestionsChart';
+import MetricCard from '../../features/admin/components/MetricCard';
+import {
+  adminDashboardService,
+  DEFAULT_ADMIN_FILTERS,
+  downloadCsvReport,
+} from '../../services/adminDashboardService';
+import type {
+  AdminFilters,
+  AdminUserOption,
+  AiInteractionRecord,
+  CountByLabel,
+  FrequentQuestionItem,
+  MetricDefinition,
+} from '../../features/admin/types';
 
 const AdminAiInteractionsPage: React.FC = () => {
-  const [records, setRecords] = useState<any[]>(mockAiInteractions);
+  const [draftFilters, setDraftFilters] = useState<AdminFilters>(DEFAULT_ADMIN_FILTERS);
+  const [filters, setFilters] = useState<AdminFilters>(DEFAULT_ADMIN_FILTERS);
+  const [users, setUsers] = useState<AdminUserOption[]>([]);
+  const [rows, setRows] = useState<AiInteractionRecord[]>([]);
+  const [aiUsage, setAiUsage] = useState<CountByLabel[]>([]);
+  const [frequentQuestions, setFrequentQuestions] = useState<FrequentQuestionItem[]>([]);
+  const [metrics, setMetrics] = useState<MetricDefinition[]>([]);
+
+  useEffect(() => {
+    void adminDashboardService.getAvailableUsers().then(setUsers);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const data = await HiperFlowApi.getAiInteractions();
-        setRecords(data?.length ? data : mockAiInteractions);
-      } catch {
-        setRecords(mockAiInteractions);
-      }
+      const [nextRows, nextAiUsage, nextFrequentQuestions, nextMetrics] = await Promise.all([
+        adminDashboardService.getAiInteractions(filters),
+        adminDashboardService.getAiUsageStats(filters),
+        adminDashboardService.getFrequentQuestions(filters),
+        adminDashboardService.getDashboardSummary(filters),
+      ]);
+
+      setRows(nextRows);
+      setAiUsage(nextAiUsage);
+      setFrequentQuestions(nextFrequentQuestions);
+      setMetrics(nextMetrics.filter((metric) => ['ai-interactions', 'chat-errors', 'whatsapp-clicks', 'email-clicks'].includes(metric.id)));
     };
+
     void load();
-  }, []);
+  }, [filters]);
+
+  const handleExport = () => {
+    downloadCsvReport(
+      'admin-interacciones-ia.csv',
+      rows.map((row) => ({
+        fecha: new Date(row.createdAt).toLocaleString('es-BO'),
+        usuario: row.userName,
+        correo: row.userEmail,
+        pregunta: row.question,
+        resumen: row.responseSummary,
+        modulo: row.module,
+        estado: row.status,
+      })),
+    );
+  };
 
   return (
-    <div className="container" style={{ padding: 20 }}>
-      <h1>Interacciones IA</h1>
-      <p style={{ color: 'var(--text-muted)' }}>Revisa preguntas hechas al asistente y su estado de respuesta.</p>
+    <div className="admin-page">
+      <section className="admin-page__hero">
+        <h2>Interacciones IA</h2>
+        <p>
+          Seguimiento del comportamiento del asistente: preguntas respondidas, errores,
+          fallback a soporte y concentración temática por módulo.
+        </p>
+      </section>
 
-      <div className="card" style={{ padding: 16, marginTop: 16 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 8 }}>Usuario</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Pregunta</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Resumen</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Módulo</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Estado</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ padding: 12, color: 'var(--text-muted)' }}>
-                  No hay interacciones IA recientes.
-                </td>
-              </tr>
-            ) : (
-              records.map((item: any, idx: number) => (
-                <tr key={`${item.userEmail}-${idx}`}>
-                  <td style={{ padding: 8 }}>{item.userEmail}</td>
-                  <td style={{ padding: 8 }}>{item.question}</td>
-                  <td style={{ padding: 8 }}>{item.responseSummary}</td>
-                  <td style={{ padding: 8 }}>{item.module}</td>
-                  <td style={{ padding: 8 }}>{item.status}</td>
-                  <td style={{ padding: 8 }}>{new Date(item.createdAt).toLocaleString()}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DashboardFilters
+        filters={draftFilters}
+        users={users}
+        onChange={(patch) => setDraftFilters((current) => ({ ...current, ...patch }))}
+        onApply={() => setFilters(draftFilters)}
+        onClear={() => {
+          setDraftFilters(DEFAULT_ADMIN_FILTERS);
+          setFilters(DEFAULT_ADMIN_FILTERS);
+        }}
+        onExport={handleExport}
+      />
+
+      <section className="admin-metrics-grid">
+        {metrics.map((metric) => (
+          <MetricCard key={metric.id} {...metric} />
+        ))}
+      </section>
+
+      <section className="admin-two-column">
+        <ChartCard
+          title="Uso del asistente"
+          subtitle="Volumen de respuestas, errores y derivaciones por soporte."
+        >
+          <AiUsageChart data={aiUsage} />
+        </ChartCard>
+
+        <ChartCard
+          title="Temas más consultados"
+          subtitle="Preguntas repetidas para identificar oportunidades de automatización."
+        >
+          <FrequentQuestionsChart data={frequentQuestions} />
+        </ChartCard>
+      </section>
+
+      <article className="admin-table-card">
+        <div className="admin-table-card__header">
+          <h3>Tabla de interacciones IA</h3>
+          <p>Ordena por fecha, usuario o estado para auditar la conversación y su respuesta.</p>
+        </div>
+        <AiInteractionsTable rows={rows} />
+      </article>
     </div>
   );
 };

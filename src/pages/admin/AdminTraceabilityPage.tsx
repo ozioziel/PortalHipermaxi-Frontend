@@ -1,61 +1,122 @@
 import React, { useEffect, useState } from 'react';
-import { HiperFlowApi } from '../../features/support/services/HiperFlowApi';
-import { mockRecentActivity } from '../../features/admin/data/mockAdminDashboard';
+import ChartCard from '../../features/admin/components/ChartCard';
+import DashboardFilters from '../../features/admin/components/DashboardFilters';
+import InteractionsByDateChart from '../../features/admin/components/InteractionsByDateChart';
+import MetricCard from '../../features/admin/components/MetricCard';
+import MostUsedModulesChart from '../../features/admin/components/MostUsedModulesChart';
+import TraceabilityTable from '../../features/admin/components/TraceabilityTable';
+import {
+  adminDashboardService,
+  DEFAULT_ADMIN_FILTERS,
+  downloadCsvReport,
+} from '../../services/adminDashboardService';
+import type {
+  AdminFilters,
+  AdminUserOption,
+  CountByModule,
+  InteractionsByDatePoint,
+  MetricDefinition,
+  TraceabilityEvent,
+} from '../../features/admin/types';
 
 const AdminTraceabilityPage: React.FC = () => {
-  const [events, setEvents] = useState<any[]>(mockRecentActivity);
+  const [draftFilters, setDraftFilters] = useState<AdminFilters>(DEFAULT_ADMIN_FILTERS);
+  const [filters, setFilters] = useState<AdminFilters>(DEFAULT_ADMIN_FILTERS);
+  const [users, setUsers] = useState<AdminUserOption[]>([]);
+  const [rows, setRows] = useState<TraceabilityEvent[]>([]);
+  const [interactionsByDate, setInteractionsByDate] = useState<InteractionsByDatePoint[]>([]);
+  const [mostUsedModules, setMostUsedModules] = useState<CountByModule[]>([]);
+  const [metrics, setMetrics] = useState<MetricDefinition[]>([]);
+
+  useEffect(() => {
+    void adminDashboardService.getAvailableUsers().then(setUsers);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const data = await HiperFlowApi.getRecentActivity();
-        setEvents(data?.length ? data : mockRecentActivity);
-      } catch {
-        setEvents(mockRecentActivity);
-      }
+      const [nextRows, nextInteractionsByDate, nextMostUsedModules, nextMetrics] = await Promise.all([
+        adminDashboardService.getTraceability(filters),
+        adminDashboardService.getInteractionsByDate(filters),
+        adminDashboardService.getMostUsedModules(filters),
+        adminDashboardService.getDashboardSummary(filters),
+      ]);
+
+      setRows(nextRows);
+      setInteractionsByDate(nextInteractionsByDate);
+      setMostUsedModules(nextMostUsedModules);
+      setMetrics(nextMetrics.slice(0, 4));
     };
+
     void load();
-  }, []);
+  }, [filters]);
+
+  const handleExport = () => {
+    downloadCsvReport(
+      'admin-trazabilidad.csv',
+      rows.map((row) => ({
+        fecha_hora: new Date(row.createdAt).toLocaleString('es-BO'),
+        usuario: row.userName,
+        correo: row.userEmail,
+        rol: row.role,
+        modulo: row.module,
+        accion: row.action,
+        descripcion: row.description,
+        estado: row.status,
+      })),
+    );
+  };
 
   return (
-    <div className="container" style={{ padding: 20 }}>
-      <h1>Trazabilidad del sistema</h1>
-      <p style={{ color: 'var(--text-muted)' }}>Eventos recientes del sistema y acciones de los usuarios.</p>
+    <div className="admin-page">
+      <section className="admin-page__hero">
+        <h2>Trazabilidad del sistema</h2>
+        <p>
+          Registro detallado de fechas, usuarios, módulos y acciones. El ordenamiento de la
+          tabla se mantiene por columna y la exportación respeta los filtros activos.
+        </p>
+      </section>
 
-      <div className="card" style={{ padding: 16, marginTop: 16 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 8 }}>Fecha</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Usuario</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Rol</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Módulo</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Acción</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ padding: 12, color: 'var(--text-muted)' }}>
-                  No hay eventos de trazabilidad.
-                </td>
-              </tr>
-            ) : (
-              events.map((item: any, idx: number) => (
-                <tr key={`${item.userEmail}-${idx}`}>
-                  <td style={{ padding: 8 }}>{new Date(item.createdAt).toLocaleString()}</td>
-                  <td style={{ padding: 8 }}>{item.userEmail || item.userId}</td>
-                  <td style={{ padding: 8 }}>{item.role || 'cliente'}</td>
-                  <td style={{ padding: 8 }}>{item.module}</td>
-                  <td style={{ padding: 8 }}>{item.action}</td>
-                  <td style={{ padding: 8 }}>{item.description || item.action}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DashboardFilters
+        filters={draftFilters}
+        users={users}
+        onChange={(patch) => setDraftFilters((current) => ({ ...current, ...patch }))}
+        onApply={() => setFilters(draftFilters)}
+        onClear={() => {
+          setDraftFilters(DEFAULT_ADMIN_FILTERS);
+          setFilters(DEFAULT_ADMIN_FILTERS);
+        }}
+        onExport={handleExport}
+      />
+
+      <section className="admin-metrics-grid">
+        {metrics.map((metric) => (
+          <MetricCard key={metric.id} {...metric} />
+        ))}
+      </section>
+
+      <section className="admin-two-column">
+        <ChartCard
+          title="Interacciones por fecha"
+          subtitle="Comportamiento temporal de la actividad registrada."
+        >
+          <InteractionsByDateChart data={interactionsByDate} />
+        </ChartCard>
+
+        <ChartCard
+          title="Módulos más usados"
+          subtitle="Concentración de eventos según el origen funcional."
+        >
+          <MostUsedModulesChart data={mostUsedModules} />
+        </ChartCard>
+      </section>
+
+      <article className="admin-table-card">
+        <div className="admin-table-card__header">
+          <h3>Tabla de trazabilidad</h3>
+          <p>Ordena por fecha, correo, módulo o estado para revisar el historial operativo.</p>
+        </div>
+        <TraceabilityTable rows={rows} />
+      </article>
     </div>
   );
 };

@@ -1,39 +1,70 @@
 import React from 'react';
+import AdminDataTable from './AdminDataTable';
+import type { UserActivityRecord } from '../types';
 
-const UserActivityTable: React.FC<{ items: any[] }> = ({ items }) => {
+interface UserActivityTableProps {
+  rows: UserActivityRecord[];
+}
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString('es-BO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+const UserActivityTable: React.FC<UserActivityTableProps> = ({ rows }) => {
   return (
-    <div style={{ overflow: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: 8 }}>Usuario</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Rol</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Módulo</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Acción</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Fecha</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.length === 0 ? (
-            <tr>
-              <td colSpan={5} style={{ padding: 12, color: 'var(--text-muted)' }}>
-                No hay actividad de usuarios disponible.
-              </td>
-            </tr>
-          ) : (
-            items.map((item: any, idx: number) => (
-              <tr key={`${item.userEmail}-${idx}`}>
-                <td style={{ padding: 8 }}>{item.userEmail}</td>
-                <td style={{ padding: 8 }}>{item.role}</td>
-                <td style={{ padding: 8 }}>{item.module}</td>
-                <td style={{ padding: 8 }}>{item.action}</td>
-                <td style={{ padding: 8 }}>{new Date(item.createdAt).toLocaleString()}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+    <AdminDataTable
+      rows={rows}
+      rowKey={(row) => row.id}
+      emptyMessage="No hay actividad de usuarios para los filtros actuales."
+      defaultSort={{ columnId: 'createdAt', direction: 'desc' }}
+      columns={[
+        {
+          id: 'userName',
+          label: 'Usuario',
+          sortable: true,
+          sortValue: (row) => row.userName,
+          render: (row) => row.userName,
+        },
+        {
+          id: 'userEmail',
+          label: 'Correo',
+          sortable: true,
+          sortValue: (row) => row.userEmail,
+          render: (row) => row.userEmail,
+        },
+        {
+          id: 'lastActivity',
+          label: 'Última actividad',
+          render: (row) => row.lastActivity,
+        },
+        {
+          id: 'moduleVisited',
+          label: 'Módulo visitado',
+          sortable: true,
+          sortValue: (row) => row.moduleVisited,
+          render: (row) => row.moduleVisited,
+        },
+        {
+          id: 'actionTaken',
+          label: 'Acción realizada',
+          sortable: true,
+          sortValue: (row) => row.actionTaken,
+          render: (row) => row.actionTaken,
+        },
+        {
+          id: 'createdAt',
+          label: 'Fecha y hora',
+          sortable: true,
+          sortValue: (row) => new Date(row.createdAt).getTime(),
+          render: (row) => formatDateTime(row.createdAt),
+        },
+      ]}
+    />
   );
 };
 

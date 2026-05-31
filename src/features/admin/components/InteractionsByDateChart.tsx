@@ -1,0 +1,45 @@
+import React from 'react';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import type { InteractionsByDatePoint } from '../types';
+
+interface InteractionsByDateChartProps {
+  data: InteractionsByDatePoint[];
+}
+
+const InteractionsByDateChart: React.FC<InteractionsByDateChartProps> = ({ data }) => {
+  if (data.length === 0) {
+    return <div className="admin-chart-empty">No hay datos en el rango seleccionado.</div>;
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <LineChart data={data}>
+        <CartesianGrid vertical={false} stroke="#e8ebef" strokeDasharray="4 4" />
+        <XAxis dataKey="label" tickLine={false} axisLine={false} />
+        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+        <Tooltip
+          contentStyle={{ borderRadius: 12, border: '1px solid #d9dde3' }}
+          formatter={(value) => [`${value ?? 0}`, 'Interacciones']}
+        />
+        <Line
+          type="monotone"
+          dataKey="count"
+          stroke="#f66014"
+          strokeWidth={3}
+          dot={{ r: 3, fill: '#f66014' }}
+          activeDot={{ r: 5 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+};
+
+export default InteractionsByDateChart;

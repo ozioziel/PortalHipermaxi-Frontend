@@ -1,62 +1,56 @@
-import React, { useEffect, useState } from 'react';
-import { HiperFlowApi } from '../../support/services/HiperFlowApi';
+import React from 'react';
+import AdminDataTable from './AdminDataTable';
+import type { FrequentQuestionItem } from '../types';
 
 interface FrequentQuestionsTableProps {
-  items?: any[];
-  fallbackItems?: any[];
+  rows: FrequentQuestionItem[];
 }
 
-const FrequentQuestionsTable: React.FC<FrequentQuestionsTableProps> = ({ items, fallbackItems = [] }) => {
-  const [questions, setQuestions] = useState<any[]>(items ?? []);
-
-  useEffect(() => {
-    if (items) {
-      setQuestions(items);
-      return;
-    }
-
-    const load = async () => {
-      try {
-        const data = await HiperFlowApi.getFrequentQuestions();
-        setQuestions(data || fallbackItems);
-      } catch {
-        setQuestions(fallbackItems);
-      }
-    };
-    void load();
-  }, [items, fallbackItems]);
-
+const FrequentQuestionsTable: React.FC<FrequentQuestionsTableProps> = ({ rows }) => {
   return (
-    <div style={{ overflow: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: 8 }}>Pregunta</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Veces</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Última</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Módulo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {questions.length === 0 ? (
-            <tr>
-              <td colSpan={4} style={{ padding: 12, color: 'var(--text-muted)' }}>
-                No hay datos disponibles.
-              </td>
-            </tr>
-          ) : (
-            questions.map((it: any, idx: number) => (
-              <tr key={`${it.question}-${idx}`}>
-                <td style={{ padding: 8 }}>{it.question}</td>
-                <td style={{ padding: 8 }}>{it.count}</td>
-                <td style={{ padding: 8 }}>{it.lastAsked}</td>
-                <td style={{ padding: 8 }}>{it.module}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+    <AdminDataTable
+      rows={rows}
+      rowKey={(row) => row.id}
+      emptyMessage="No hay preguntas frecuentes para los filtros seleccionados."
+      defaultSort={{ columnId: 'count', direction: 'desc' }}
+      columns={[
+        {
+          id: 'question',
+          label: 'Pregunta',
+          sortable: true,
+          sortValue: (row) => row.question,
+          render: (row) => row.question,
+        },
+        {
+          id: 'count',
+          label: 'Cantidad',
+          sortable: true,
+          sortValue: (row) => row.count,
+          render: (row) => row.count.toLocaleString('es-BO'),
+        },
+        {
+          id: 'module',
+          label: 'Módulo',
+          sortable: true,
+          sortValue: (row) => row.module,
+          render: (row) => row.module,
+        },
+        {
+          id: 'lastAsked',
+          label: 'Última consulta',
+          sortable: true,
+          sortValue: (row) => row.lastAsked,
+          render: (row) => row.lastAsked,
+        },
+        {
+          id: 'category',
+          label: 'Categoría',
+          sortable: true,
+          sortValue: (row) => row.category,
+          render: (row) => row.category,
+        },
+      ]}
+    />
   );
 };
 
