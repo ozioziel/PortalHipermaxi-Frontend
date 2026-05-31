@@ -1,0 +1,78 @@
+@import '../../styles/variables.css';
+
+.form-progress{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.form-progress__line{
+  position:relative;
+  height:4px;
+  background:rgba(15,23,42,0.06);
+  border-radius:4px;
+  overflow:hidden;
+}
+
+.form-progress__fill{
+  position:absolute;
+  left:0;top:0;bottom:0;
+  height:100%;
+  background:var(--hiper-orange);
+  border-radius:4px;
+  transition:width 300ms ease;
+}
+
+.form-progress__points{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:flex-start;
+  padding:0 2px;
+}
+
+.form-progress__point{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+}
+
+.form-progress__dot{
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  display:block;
+}
+
+.form-progress__point.is-done .form-progress__dot{
+  background:var(--hiper-orange);
+  box-shadow:0 6px 16px rgba(246,96,20,0.12);
+}
+
+.form-progress__point.is-pending .form-progress__dot{
+  background:transparent;
+  border:1px solid rgba(15,23,42,0.08);
+}
+
+.form-progress__point.is-current .form-progress__dot{
+  background:var(--hiper-orange);
+  transform:scale(1.1);
+  box-shadow:0 8px 20px rgba(246,96,20,0.16);
+  border:2px solid rgba(255,255,255,0.0);
+}
+
+.form-progress__meta small{
+  color:var(--text-muted);
+  font-size:12px;
+}
+
+/* compact mode for small screens */
+.form-progress--compact .form-progress__points{ gap:8px }
+.form-progress--compact .form-progress__point{ width:14px; height:14px }
+.form-progress--compact .form-progress__dot{ width:10px;height:10px }
+
+@media(max-width:720px){
+  .form-progress__points{ gap:8px }
+}

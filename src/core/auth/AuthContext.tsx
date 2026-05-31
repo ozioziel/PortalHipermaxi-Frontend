@@ -65,10 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const ADMIN_EMAIL = 'admin@hipermaxi.com';
-  const ADMIN_PASSWORD = 'Admin123*';
-  const ADMIN_USER: User = { id: 'admin', email: ADMIN_EMAIL, role: 'admin' };
-
   const login = async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
     const mockMatch = mockUsers.find((user) => user.email === normalizedEmail);
@@ -126,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         action: 'LOGIN_SUCCESS',
         description: `Login success for ${u.email}`,
         createdAt: new Date().toISOString(),
-      }).catch(() => null);
+      } as any).catch(() => null);
 
       return true;
     } catch (err) {

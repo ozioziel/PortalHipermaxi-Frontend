@@ -6,8 +6,10 @@ import type {
   ValidationResult,
 } from '../types';
 
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+
 const requestJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(path, {
+  const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

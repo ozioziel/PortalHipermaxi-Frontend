@@ -6,7 +6,6 @@ import ProductListPage from '../../features/products/pages/ProductListPage';
 import AvdPage from '../../pages/avd/AvdPage';
 import FacturasPage from '../../pages/facturas/FacturasPage';
 import NuevoProveedorPage from '../../pages/nuevo-proveedor/NuevoProveedorPage';
-import LoginModal from '../../features/auth/components/LoginModal';
 import AdminLayout from '../../pages/admin/AdminLayout';
 import AdminDashboardPage from '../../pages/admin/AdminDashboardPage';
 import AdminTraceabilityPage from '../../pages/admin/AdminTraceabilityPage';
@@ -16,8 +15,6 @@ import AdminUserActivityPage from '../../pages/admin/AdminUserActivityPage';
 import { useAuth } from '../auth/AuthContext';
 
 export const AppRoutes: React.FC = () => {
-  const user = useAuth().user;
-
   const ProtectedRoute: React.FC<{ allowedRoles: string[]; children: React.ReactNode }> = ({ allowedRoles, children }) => {
     const { user } = useAuth();
     if (!user) {

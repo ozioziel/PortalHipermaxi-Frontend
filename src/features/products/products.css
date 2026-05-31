@@ -29,7 +29,7 @@
 .products-table .options button{background:#ef4444;color:white;border:none;padding:6px 8px;border-radius:6px}
 
 /* Modal styles */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:60}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1200}
 .modal{background:white;border-radius:8px;max-width:920px;width:92%;max-height:92vh;overflow:auto;padding:16px}
 .modal .modal-header{display:flex;justify-content:space-between;align-items:center}
 .modal .form-grid{display:grid;grid-template-columns:1fr;gap:12px}

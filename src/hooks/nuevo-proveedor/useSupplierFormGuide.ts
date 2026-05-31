@@ -242,10 +242,8 @@ export const useSupplierFormGuide = ({
   };
 
   const goToStep = (stepIndex: number) => {
-    setCurrentStepIndex((previousStep) => {
-      const nextIndex = Math.min(Math.max(stepIndex, 0), supplierGuideSteps.length - 1);
-      return nextIndex;
-    });
+    const nextIndex = Math.min(Math.max(stepIndex, 0), supplierGuideSteps.length - 1);
+    setCurrentStepIndex(nextIndex);
   };
 
   const goToPreviousStep = () => {

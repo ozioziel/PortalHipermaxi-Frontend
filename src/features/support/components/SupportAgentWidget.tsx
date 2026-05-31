@@ -57,6 +57,7 @@ const SupportAgentWidget: React.FC<Props> = ({
       if (response.next_action === 'START_GUIDE') {
         onStartGuide();
       }
+
       if (response.next_action === 'VALIDATE_FORM') {
         onValidationRequested();
       }
@@ -78,23 +79,25 @@ const SupportAgentWidget: React.FC<Props> = ({
   }
 
   return (
-    <div className="support-widget" style={{ position: 'fixed', right: 18, bottom: 18, zIndex: 90 }}>
-      <section className="support-panel">
-        <div className="support-header">
+    <div className="support-agent-widget">
+      <section className="support-agent-panel">
+        <div className="support-agent-header">
           <strong>SupportAgent</strong>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-white" onClick={onStartGuide}>Guía</button>
-            <button className="btn btn-white btn-small" onClick={onClose}>Cerrar</button>
+            <button className="btn btn-secondary" onClick={onStartGuide}>Guía</button>
+            <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>
           </div>
         </div>
-        <div className="support-messages">
+
+        <div className="support-agent-messages">
           {messages.map((message, index) => (
-            <div className={`support-message ${message.role}`} key={`${message.role}-${index}`}>
+            <div className={`support-agent-message ${message.role}`} key={`${message.role}-${index}`}>
               {message.content}
             </div>
           ))}
         </div>
-        <div className="support-input-row">
+
+        <div className="support-agent-input-row">
           <input
             value={text}
             placeholder="Ej: No puedo guardar mi producto"

@@ -1,4 +1,4 @@
-.support-widget {
+.support-agent-widget {
   position: fixed;
   right: 18px;
   bottom: 18px;
@@ -13,26 +13,28 @@
 .debug-toggle {
   border: 0;
   border-radius: 999px;
-  background: #0f69d5;
+  background: var(--hiper-orange);
   color: white;
   padding: 8px 12px;
   font-weight: 700;
   cursor: pointer;
   min-width: 120px;
   letter-spacing: 0.02em;
+  font-size: 13px;
+  box-shadow: none;
 }
 
-.support-panel {
+.support-agent-panel {
   width: min(360px, calc(100vw - 32px));
   background: white;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(15,23,42,0.08);
   border-radius: 12px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
   overflow: hidden;
 }
 
-.support-header,
-.support-input-row {
+.support-agent-header,
+.support-agent-input-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -40,16 +42,16 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-.support-header {
+.support-agent-header {
   justify-content: space-between;
 }
 
-.support-input-row {
+.support-agent-input-row {
   border-top: 1px solid #e5e7eb;
   border-bottom: 0;
 }
 
-.support-input-row input {
+.support-agent-input-row input {
   flex: 1;
   min-width: 0;
   padding: 9px;
@@ -57,14 +59,14 @@
   border-radius: 6px;
 }
 
-.support-messages {
+.support-agent-messages {
   max-height: 300px;
   overflow: auto;
   padding: 12px;
   background: #f8fafc;
 }
 
-.support-message {
+.support-agent-message {
   padding: 9px 10px;
   border-radius: 8px;
   margin-bottom: 8px;
@@ -72,12 +74,12 @@
   line-height: 1.4;
 }
 
-.support-message.user {
+.support-agent-message.user {
   margin-left: 40px;
   background: #ffedd5;
 }
 
-.support-message.assistant {
+.support-agent-message.assistant {
   margin-right: 28px;
   background: white;
   border: 1px solid #e5e7eb;
@@ -218,7 +220,7 @@
 }
 
 @media (max-width: 640px) {
-  .support-widget,
+  .support-agent-widget,
   .debug-shell {
     right: 12px;
     left: 12px;
@@ -229,7 +231,7 @@
     bottom: 86px;
   }
 
-  .support-panel,
+  .support-agent-panel,
   .debug-panel {
     width: 100%;
   }

@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, { useMemo, useState } from 'react';
 import MainLayout from '../../../core/components/layout/MainLayout';
 import '../products.css';
 import ProductToolbar from '../components/ProductToolbar';
@@ -6,17 +6,17 @@ import ProductTable from '../components/ProductTable';
 import ProductFormModal from '../components/ProductFormModal';
 import type { Product } from '../types/product.types';
 import { ProductStorage } from '../services/ProductStorage';
-import { initialProductFormState, productFromForm, validationErrorsByField } from '../utils/productForm';
+import {
+  initialProductFormState,
+  productFromForm,
+  validationErrorsByField,
+} from '../utils/productForm';
 import GuideOverlay from '../../support/components/GuideOverlay';
-import HiperFlowDebugPanel from '../../support/components/HiperFlowDebugPanel';
-import SupportAgentWidget from '../../support/components/SupportAgentWidget';
 import { buildCorrectionGuide, buildFullProductGuide } from '../../support/data/productGuideFields';
 import { HiperFlowApi } from '../../support/services/HiperFlowApi';
-import { useSupportPanel } from '../../support/SupportPanelContext';
-import type { GuideResponse, ProductFormState, SupportChatResponse, ValidationResult } from '../../support/types';
+import type { GuideResponse, ProductFormState, ValidationResult } from '../../support/types';
 
 const ProductListPage: React.FC = () => {
-  const { open: isSupportOpen, setOpen: setSupportOpen } = useSupportPanel();
   const [showNew, setShowNew] = useState(false);
   const [products, setProducts] = useState<Product[]>(() => ProductStorage.list());
   const [query, setQuery] = useState('');
@@ -25,8 +25,6 @@ const ProductListPage: React.FC = () => {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [guide, setGuide] = useState<GuideResponse | null>(null);
   const [guideActive, setGuideActive] = useState(false);
-  const [lastQuestion, setLastQuestion] = useState('');
-  const [lastResponse, setLastResponse] = useState<SupportChatResponse | null>(null);
 
   const filteredProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -40,7 +38,10 @@ const ProductListPage: React.FC = () => {
 
   const activeProducts = activeTab === 'products' ? filteredProducts : [];
 
-  const updateFormState = (field: keyof ProductFormState, value: ProductFormState[keyof ProductFormState]) => {
+  const updateFormState = (
+    field: keyof ProductFormState,
+    value: ProductFormState[keyof ProductFormState],
+  ) => {
     setFormState((current) => ({ ...current, [field]: value }));
     setValidationResult(null);
   };
@@ -51,6 +52,7 @@ const ProductListPage: React.FC = () => {
     const productGuide = buildFullProductGuide(serverGuide);
     setGuide(productGuide);
     setGuideActive(true);
+
     void HiperFlowApi.logInteraction({
       process: 'registro_producto',
       type: 'guide_step',
@@ -73,6 +75,7 @@ const ProductListPage: React.FC = () => {
     const correctionGuide = buildCorrectionGuide(result);
     setGuide(correctionGuide);
     setGuideActive(true);
+
     void HiperFlowApi.logInteraction({
       process: 'registro_producto',
       type: 'validation',
@@ -153,12 +156,33 @@ const ProductListPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div style={{marginTop: 16}} className="products-container" data-ai-section="Lista de productos">
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16}}>
+      <div style={{ marginTop: 16 }} className="products-container" data-ai-section="Lista de productos">
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
           <div>
-            <div style={{fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#334155'}}>Productos</div>
-            <h2 style={{margin: '8px 0 0'}}>Lista de Productos</h2>
+            <div
+              style={{
+                fontSize: 12,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: '#334155',
+              }}
+            >
+              Productos
+            </div>
+            <h2 style={{ margin: '8px 0 0' }}>Lista de Productos</h2>
           </div>
+
+          <button className="btn btn-secondary" onClick={() => void startGuide()}>
+            Guía del registro
+          </button>
         </div>
 
         <ProductToolbar
@@ -170,7 +194,7 @@ const ProductListPage: React.FC = () => {
           onFilterClick={() => setActiveTab('products')}
         />
 
-        <div style={{marginTop: 8}} className="tabs">
+        <div style={{ marginTop: 8 }} className="tabs">
           <div
             className={`tab${activeTab === 'products' ? ' active' : ''}`}
             onClick={() => setActiveTab('products')}
@@ -186,12 +210,16 @@ const ProductListPage: React.FC = () => {
         </div>
 
         {activeTab === 'pending' ? (
-          <div style={{padding: 20, background: '#f8fafc', borderRadius: 6, marginTop: 16, color: '#334155'}}>
+          <div
+            style={{ padding: 20, background: '#f8fafc', borderRadius: 6, marginTop: 16, color: '#334155' }}
+          >
             <strong>No hay productos pendientes de aprobación.</strong>
-            <p style={{margin: '8px 0 0'}}>Navega a “Productos” para ver la lista completa.</p>
+            <p style={{ margin: '8px 0 0' }}>Navega a “Productos” para ver la lista completa.</p>
           </div>
         ) : activeProducts.length === 0 ? (
-          <div style={{padding: 20, background: '#f8fafc', borderRadius: 6, marginTop: 16, color: '#334155'}}>
+          <div
+            style={{ padding: 20, background: '#f8fafc', borderRadius: 6, marginTop: 16, color: '#334155' }}
+          >
             No se encontraron productos para la búsqueda actual.
           </div>
         ) : (
@@ -207,29 +235,6 @@ const ProductListPage: React.FC = () => {
           onClose={() => setShowNew(false)}
           onChange={updateFormState}
           onSave={() => void handleSave()}
-        />
-      )}
-
-      <SupportAgentWidget
-        isOpen={isSupportOpen}
-        onClose={() => setSupportOpen(false)}
-        formState={formState}
-        guideActive={guideActive}
-        onStartGuide={() => void startGuide()}
-        onValidationRequested={() => void validateForm().then((result) => {
-          if (!result.valid) startCorrectionGuide(result);
-        })}
-        onDebugUpdate={(response, question) => {
-          setLastQuestion(question);
-          setLastResponse(response);
-        }}
-      />
-
-      {import.meta.env.DEV && (
-        <HiperFlowDebugPanel
-          lastQuestion={lastQuestion}
-          lastResponse={lastResponse}
-          validationResult={validationResult}
         />
       )}
 

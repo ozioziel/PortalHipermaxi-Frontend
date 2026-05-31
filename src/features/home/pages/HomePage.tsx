@@ -12,10 +12,10 @@ const HomePage: React.FC = () => {
       <section className="features">
         <h2>Portal Hipermaxi</h2>
         <div className="features-grid" style={{marginTop:12}}>
-          <FeatureCard title="Proveedores" description="Administracion de Proveedores." />
-          <FeatureCard title="Productos & Catálogos de Precios" description="Está plataforma permite a nuestros proveedores mantenernos actualizados." />
-          <FeatureCard title="Órdenes de Compra" description="Consulta información relacionada con tus órdenes de compra." />
-          <FeatureCard title="Comunicación Comercial" description="Mantén una comunicación ágil y segura con el área Comercial / Compras." />
+          <FeatureCard icon="🤝" title="Proveedores" description="Administracion de Proveedores." />
+          <FeatureCard icon="📦" title="Productos & Catálogos de Precios" description="Está plataforma permite a nuestros proveedores mantenernos actualizados." />
+          <FeatureCard icon="🧾" title="Órdenes de Compra" description="Consulta información relacionada con tus órdenes de compra." />
+          <FeatureCard icon="💬" title="Comunicación Comercial" description="Mantén una comunicación ágil y segura con el área Comercial / Compras." />
         </div>
       </section>
 

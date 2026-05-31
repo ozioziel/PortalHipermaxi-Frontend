@@ -3,9 +3,10 @@ import {appConfig} from '../../constants/appConfig';
 
 export const Footer: React.FC = () => {
   return (
-    <footer style={{padding:'20px 0',marginTop:32,background:'transparent'}}>
-      <div className="container" style={{textAlign:'center',color:'var(--text-muted)'}}>
-        {appConfig.footerText}
+    <footer className="app-footer">
+      <div className="container" style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+        <span style={{fontWeight:700,color:'var(--text-dark)'}}>Portal Hipermaxi</span>
+        <span>{appConfig.footerText}</span>
       </div>
     </footer>
   );

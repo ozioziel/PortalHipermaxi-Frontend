@@ -13,7 +13,7 @@ const statusText = {
 };
 
 const VoiceAssistantButton: React.FC = () => {
-  const { status, lastMessage, error, start, stop, isLoading, fallbackVisible } = useRealtimeVoiceAssistant();
+  const { status, lastMessage, error, start, stop, fallbackVisible } = useRealtimeVoiceAssistant();
   const { open: supportOpen } = useSupportPanel();
   const active = status !== 'idle' && status !== 'error';
 
@@ -31,18 +31,19 @@ const VoiceAssistantButton: React.FC = () => {
         </div>
       )}
 
-      {/* Fallback UI when connection fails */}
       {(fallbackVisible || (!active && error)) && (
         <div className="voice-assistant-panel">
           <ChatFallbackSupport />
         </div>
       )}
+
       <button
         className={`voice-assistant-button ${active ? 'active' : ''}`}
         onClick={() => {
           if (active) stop();
           else void start();
         }}
+        aria-label={active ? 'Detener IA' : 'Abrir asistente de voz'}
       >
         {active ? 'Detener IA' : 'Hablar con IA'}
       </button>

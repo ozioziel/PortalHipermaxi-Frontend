@@ -8,6 +8,7 @@ import { validateInvoiceFile } from '../../services/facturas/invoiceValidationSe
 import InvoiceObservationBox from './InvoiceObservationBox';
 import InvoiceStatusBadge from './InvoiceStatusBadge';
 import InvoiceUploadActions from './InvoiceUploadActions';
+import FormProgressBar from '../../core/components/ui/FormProgressBar';
 
 interface InvoiceUploadDetailProps {
   onClose: () => void;
@@ -113,6 +114,17 @@ const InvoiceUploadDetail: React.FC<InvoiceUploadDetailProps> = ({
           status={order.estadoFactura}
         />
       </div>
+
+      <FormProgressBar
+        totalSteps={3}
+        completedSteps={(() => {
+          const datos = 1; // Datos recepcion always present (read-only)
+          const observacion = providerObservation.trim() ? 1 : 0;
+          const factura = order.uploadedInvoices.length > 0 ? 1 : 0;
+          return datos + observacion + factura;
+        })()}
+        labels={["Datos recepción","Observación","Factura digital"]}
+      />
 
       <section className="invoice-section">
         <div className="invoice-section__title">DATOS RECEPCIÓN</div>

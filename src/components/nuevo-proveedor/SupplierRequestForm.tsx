@@ -7,6 +7,8 @@ import SupplierRequestSuccess from './SupplierRequestSuccess';
 import SupplierRequestSummary from './SupplierRequestSummary';
 import SupplierRolesSection from './SupplierRolesSection';
 import useSupplierFormGuide from '../../hooks/nuevo-proveedor/useSupplierFormGuide';
+import useAutoGuide from '../../hooks/useAutoGuide';
+import FormProgressBar from '../../core/components/ui/FormProgressBar';
 import {
   initialSupplierRequestFormData,
   validateSupplierRequest,
@@ -38,31 +40,6 @@ const supportCardButtonStyle: React.CSSProperties = {
   color: '#1d4ed8',
 };
 
-const progressWrapperStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 14,
-  padding: '18px 20px',
-  borderRadius: 16,
-  border: '1px solid #e5e7eb',
-  background: '#ffffff',
-};
-
-const progressLineStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(4, 1fr)',
-  gap: 10,
-};
-
-const progressStepStyle = (active: boolean): React.CSSProperties => ({
-  padding: '12px 14px',
-  borderRadius: 999,
-  background: active ? '#1d4ed8' : '#f8fafc',
-  color: active ? '#ffffff' : '#475569',
-  fontSize: 13,
-  fontWeight: 700,
-  textAlign: 'center',
-});
-
 const sectionFooterStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -76,32 +53,12 @@ const sectionButtonStyle: React.CSSProperties = {
   minWidth: 140,
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #d1d5db',
-  color: 'var(--text-dark)',
-};
-
-const actionRowStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 12,
-  flexWrap: 'wrap',
-};
-
-const actionGroupStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 12,
-  flexWrap: 'wrap',
-};
-
 const createEmptyErrors = (): SupplierRequestErrors => ({});
 
 type SupplierFormSection = {
   label: string;
   tour: string;
-  component: (props: Record<string, unknown>) => JSX.Element;
+  component: (props: Record<string, unknown>) => React.ReactElement;
 };
 
 const sectionDefinitions: SupplierFormSection[] = [
@@ -111,12 +68,12 @@ const sectionDefinitions: SupplierFormSection[] = [
     component: (props) => <SupplierGeneralDataSection {...(props as any)} />,
   },
   {
-    label: 'Datos de contacto',
+    label: 'Roles y contactos',
     tour: 'supplier-contact-section',
     component: (props) => <SupplierRolesSection {...(props as any)} />,
   },
   {
-    label: 'Documentos',
+    label: 'Catálogo',
     tour: 'supplier-documents-section',
     component: (props) => <SupplierCatalogSection {...(props as any)} />,
   },
@@ -126,6 +83,30 @@ const sectionDefinitions: SupplierFormSection[] = [
     component: (props) => <SupplierRequestSummary formData={(props as any).formData} />,
   },
 ];
+
+const sectionFields: Record<number, SupplierRequestField[]> = {
+  0: ['providerName', 'legalName', 'nit'],
+  1: [
+    'systemsManagerName',
+    'systemsManagerEmail',
+    'systemsManagerPhone',
+    'hubManagerName',
+    'hubManagerEmail',
+    'hubManagerPhone',
+    'salesManagerName',
+    'salesManagerEmail',
+    'salesManagerPhone',
+  ],
+  2: [
+    'providerCode',
+    'region',
+    'sellerName',
+    'sellerPhone',
+    'hipermaxiCommercialManager',
+    'observations',
+  ],
+  3: [],
+};
 
 export const SupplierRequestForm: React.FC = () => {
   const navigate = useNavigate();
@@ -142,6 +123,7 @@ export const SupplierRequestForm: React.FC = () => {
     activeSectionIndex: currentSectionIndex,
     onSectionChange: setCurrentSectionIndex,
   });
+  useAutoGuide(guide.openGuide);
 
   const currentSection = sectionDefinitions[currentSectionIndex];
 
@@ -157,12 +139,39 @@ export const SupplierRequestForm: React.FC = () => {
     });
   };
 
+  const validateSection = (sectionIndex: number) => {
+    const validation = validateSupplierRequest(formData);
+    const relevantFields = sectionFields[sectionIndex] || [];
+
+    const sectionErrors: SupplierRequestErrors = {};
+    relevantFields.forEach((field) => {
+      if (validation[field]) {
+        sectionErrors[field] = validation[field];
+      }
+    });
+
+    setErrors((current) => {
+      const next = { ...current };
+      relevantFields.forEach((field) => {
+        if (validation[field]) {
+          next[field] = validation[field];
+        } else {
+          delete next[field];
+        }
+      });
+      return next;
+    });
+
+    return Object.keys(sectionErrors).length === 0;
+  };
+
   const handleClearForm = () => {
     setFormData(initialSupplierRequestFormData);
     setErrors(createEmptyErrors());
     setHasAttemptedSubmit(false);
     setIsSubmitting(false);
     setCurrentSectionIndex(0);
+    guide.closeGuide();
   };
 
   const handleSubmit = () => {
@@ -188,6 +197,10 @@ export const SupplierRequestForm: React.FC = () => {
   };
 
   const goToNextSection = () => {
+    if (!validateSection(currentSectionIndex)) {
+      return;
+    }
+
     setCurrentSectionIndex((previousIndex) =>
       Math.min(previousIndex + 1, sectionDefinitions.length - 1),
     );
@@ -209,9 +222,51 @@ export const SupplierRequestForm: React.FC = () => {
     );
   }
 
+  const progressValidation = validateSupplierRequest(formData);
+  const generalCompleted = Boolean(
+    formData.providerName.trim()
+      && formData.legalName.trim()
+      && formData.nit.trim()
+      && !progressValidation.providerName
+      && !progressValidation.legalName
+      && !progressValidation.nit,
+  );
+  const contactsCompleted = Boolean(
+    formData.hubManagerName.trim()
+      && formData.hubManagerEmail.trim()
+      && formData.hubManagerPhone.trim()
+      && !progressValidation.systemsManagerEmail
+      && !progressValidation.systemsManagerPhone
+      && !progressValidation.hubManagerName
+      && !progressValidation.hubManagerEmail
+      && !progressValidation.hubManagerPhone
+      && !progressValidation.salesManagerEmail
+      && !progressValidation.salesManagerPhone,
+  );
+  const catalogCompleted = Boolean(
+    formData.providerCode.trim()
+      && formData.region.trim()
+      && !progressValidation.providerCode
+      && !progressValidation.region
+      && !progressValidation.sellerPhone,
+  );
+  const summaryCompleted = generalCompleted && contactsCompleted && catalogCompleted;
+
   return (
     <>
       <div style={{ display: 'grid', gap: 16 }}>
+        <FormProgressBar
+          totalSteps={sectionDefinitions.length}
+          currentStep={currentSectionIndex}
+          completedSteps={[
+            generalCompleted,
+            contactsCompleted,
+            catalogCompleted,
+            summaryCompleted,
+          ].filter(Boolean).length}
+          labels={sectionDefinitions.map((section) => section.label)}
+        />
+
         <section className="card" style={supportCardStyle}>
           <div>
             <h2 style={{ margin: '0 0 8px 0', fontSize: 20 }}>Guía visual del formulario</h2>
@@ -231,32 +286,31 @@ export const SupplierRequestForm: React.FC = () => {
           </button>
         </section>
 
-        <section className="card" data-tour="supplier-progress-bar" style={progressWrapperStyle}>
-          <div style={progressLineStyle}>
-            {sectionDefinitions.map((section, index) => (
-              <div key={section.tour} style={progressStepStyle(index === currentSectionIndex)}>
-                {section.label}
-              </div>
-            ))}
-          </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-            Paso {currentSectionIndex + 1} de {sectionDefinitions.length}
-          </div>
-        </section>
-
         <div style={{ display: 'grid', gap: 16 }} data-tour={currentSection.tour}>
           {currentSection.component({ formData, errors, onFieldChange: handleFieldChange })}
 
           <div style={sectionFooterStyle}>
-            <button
-              className="btn btn-secondary"
-              data-tour="back-button"
-              onClick={goToPreviousSection}
-              disabled={currentSectionIndex === 0}
-              style={sectionButtonStyle}
-            >
-              Anterior
-            </button>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button
+                className="btn btn-secondary"
+                data-tour="back-button"
+                onClick={goToPreviousSection}
+                disabled={currentSectionIndex === 0}
+                style={sectionButtonStyle}
+              >
+                Anterior
+              </button>
+
+              {currentSectionIndex === sectionDefinitions.length - 1 ? (
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleClearForm}
+                  style={sectionButtonStyle}
+                >
+                  Limpiar
+                </button>
+              ) : null}
+            </div>
 
             {currentSectionIndex < sectionDefinitions.length - 1 ? (
               <button

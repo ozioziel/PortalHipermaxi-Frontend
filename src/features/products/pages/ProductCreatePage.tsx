@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import MainLayout from '../../../core/components/layout/MainLayout';
 import ProductFormSections from '../components/ProductFormSections';
+import FormProgressBar from '../../../core/components/ui/FormProgressBar';
 import { useNavigate } from 'react-router-dom';
 import { ProductStorage } from '../services/ProductStorage';
 import { initialProductFormState, productFromForm, validationErrorsByField } from '../utils/productForm';
@@ -48,6 +49,19 @@ const ProductCreatePage: React.FC = () => {
         <p>Completa la informacion del producto para enviarlo a revision.</p>
 
         <div style={{marginTop:12}} className="card">
+          <FormProgressBar
+            totalSteps={4}
+            completedSteps={(() => {
+              const s = formState;
+              const basic = Boolean(s.description.trim() && s.internalCode.trim() && s.label.trim());
+              const sanitary = Boolean(s.dimensions.trim() && s.sanitaryRegister.trim());
+              const images = Boolean(s.images && s.images.length > 0);
+              const pricing = Boolean(s.price && s.unit);
+              return [basic, sanitary, images, pricing].filter(Boolean).length;
+            })()}
+            labels={["Datos principales","Medidas","Imágenes","Precios"]}
+          />
+
           <ProductFormSections
             formState={formState}
             errors={validationErrorsByField(validationResult)}
