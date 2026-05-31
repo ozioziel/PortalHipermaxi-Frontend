@@ -1,8 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { clearAssistantUI } from '../lib/assistantDomActions';
 import { callUiAutomationMcpTool, connectUiAutomationMcpBridge } from '../lib/uiAutomationMcpBridge';
 
-type VoiceStatus = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
+type VoiceStatus = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error';
 
 type RealtimeSessionResponse = {
   value?: string;
@@ -54,13 +54,22 @@ export const useRealtimeVoiceAssistant = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [fallbackVisible, setFallbackVisible] = useState(false);
+  const [connected, setConnected] = useState(false);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const connectedRef = useRef(false);
   const stopRef = useRef<() => void>(() => undefined);
+  const statusRef = useRef<VoiceStatus>('idle');
+  const activeResponseRef = useRef<string | null>(null);
+  const completedToolCallsRef = useRef<Set<string>>(new Set());
   const preserveAssistantUiOnStopRef = useRef(false);
+
+  const setVoiceStatus = useCallback((nextStatus: VoiceStatus) => {
+    statusRef.current = nextStatus;
+    setStatus(nextStatus);
+  }, []);
 
   const sendEvent = useCallback((event: Record<string, unknown>) => {
     const channel = dataChannelRef.current;
@@ -70,7 +79,7 @@ export const useRealtimeVoiceAssistant = () => {
   }, []);
 
   const sendToolResult = useCallback((callId: string, result: unknown, createResponse = true) => {
-    sendEvent({
+    const sent = sendEvent({
       type: 'conversation.item.create',
       item: {
         type: 'function_call_output',
@@ -78,59 +87,105 @@ export const useRealtimeVoiceAssistant = () => {
         output: JSON.stringify(result),
       },
     });
-    if (createResponse) {
+    if (sent && createResponse) {
       sendEvent({ type: 'response.create' });
     }
   }, [sendEvent]);
 
   const handleToolCall = useCallback(async (name?: string, callId?: string, rawArguments?: string) => {
     if (!name || !callId) return;
-    const args = parseJson(rawArguments);
-    const result = await callUiAutomationMcpTool(name, args);
-    const deactivateVoice = shouldDeactivateForGuidedSteps(result);
+    if (completedToolCallsRef.current.has(callId)) return;
+    completedToolCallsRef.current.add(callId);
 
-    sendToolResult(callId, result, !deactivateVoice);
+    try {
+      setVoiceStatus('thinking');
+      const args = parseJson(rawArguments);
+      const result = await callUiAutomationMcpTool(name, args);
+      const deactivateVoice = shouldDeactivateForGuidedSteps(result);
 
-    if (deactivateVoice) {
-      sendEvent({ type: 'response.cancel' });
-      preserveAssistantUiOnStopRef.current = true;
-      window.setTimeout(() => stopRef.current(), 120);
+      sendToolResult(callId, result, !deactivateVoice);
+
+      if (deactivateVoice) {
+        preserveAssistantUiOnStopRef.current = true;
+        window.setTimeout(() => stopRef.current(), 120);
+      }
+    } catch (caught) {
+      sendToolResult(callId, {
+        ok: false,
+        message: caught instanceof Error ? caught.message : 'No se pudo ejecutar la accion solicitada.',
+      });
     }
-  }, [sendEvent, sendToolResult]);
+  }, [sendToolResult, setVoiceStatus]);
 
   const handleEvent = useCallback((event: Record<string, unknown>) => {
     const type = String(event.type || '');
 
     if (type === 'input_audio_buffer.speech_started') {
+      if (statusRef.current === 'speaking') {
+        sendEvent({ type: 'output_audio_buffer.clear' });
+      }
       clearAssistantUI();
-      setStatus('listening');
-      sendEvent({ type: 'response.cancel' });
+      setLastMessage('Te escucho...');
+      setVoiceStatus('listening');
+      return;
     }
 
-    if (type.includes('response.audio') && type.includes('started')) {
-      setStatus('speaking');
+    if (type === 'input_audio_buffer.speech_stopped' || type === 'input_audio_buffer.committed') {
+      setVoiceStatus('thinking');
+      return;
     }
 
-    if (type === 'response.audio.done' || type === 'response.done') {
-      setStatus('listening');
+    if (type === 'response.created') {
+      const response = event.response as { id?: string } | undefined;
+      activeResponseRef.current = response?.id || null;
+      setLastMessage('');
+      setVoiceStatus('thinking');
+      return;
     }
 
-    if (type === 'response.audio_transcript.delta' || type === 'response.text.delta') {
+    if (type === 'output_audio_buffer.started' || type === 'response.output_audio.delta') {
+      setVoiceStatus('speaking');
+      return;
+    }
+
+    if (type === 'output_audio_buffer.stopped' || type === 'response.output_audio.done') {
+      if (connectedRef.current) setVoiceStatus('listening');
+      return;
+    }
+
+    if (
+      type === 'response.output_audio_transcript.delta' ||
+      type === 'response.output_text.delta' ||
+      type === 'response.text.delta'
+    ) {
       const delta = String(event.delta || '');
       if (delta) setLastMessage((current) => `${current}${delta}`);
+      return;
     }
 
     if (type === 'conversation.item.input_audio_transcription.completed') {
-      setLastMessage(String(event.transcript || ''));
+      const transcript = String(event.transcript || '').trim();
+      if (transcript) setLastMessage(transcript);
+      return;
     }
 
     if (type === 'response.function_call_arguments.done') {
       void handleToolCall(String(event.name || ''), String(event.call_id || ''), String(event.arguments || '{}'));
+      return;
     }
 
     const item = event.item as Record<string, unknown> | undefined;
-    if ((type === 'response.output_item.done' || type === 'conversation.item.created') && item?.type === 'function_call') {
+    if (type === 'response.output_item.done' && item?.type === 'function_call') {
       void handleToolCall(String(item.name || ''), String(item.call_id || ''), String(item.arguments || '{}'));
+      return;
+    }
+
+    if (type === 'response.done') {
+      activeResponseRef.current = null;
+      if (connectedRef.current && statusRef.current !== 'error') {
+        setVoiceStatus('listening');
+      }
+      return;
     }
 
     if (type === 'error') {
@@ -140,13 +195,16 @@ export const useRealtimeVoiceAssistant = () => {
         console.error('Realtime error event:', rawMsg);
       }
       setError(resolveUserMessage(String(rawMsg)));
-      setStatus('error');
+      setVoiceStatus('error');
       setFallbackVisible(true);
     }
-  }, [handleToolCall, sendEvent]);
+  }, [handleToolCall, sendEvent, setVoiceStatus]);
 
   const stop = useCallback(() => {
     connectedRef.current = false;
+    setConnected(false);
+    activeResponseRef.current = null;
+    completedToolCallsRef.current.clear();
     dataChannelRef.current?.close();
     peerRef.current?.close();
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -159,19 +217,21 @@ export const useRealtimeVoiceAssistant = () => {
       clearAssistantUI();
     }
     preserveAssistantUiOnStopRef.current = false;
-    setStatus('idle');
-  }, []);
+    setIsLoading(false);
+    setVoiceStatus('idle');
+  }, [setVoiceStatus]);
 
   stopRef.current = stop;
 
   const start = useCallback(async () => {
     if (connectedRef.current) return;
 
-    setStatus('connecting');
+    setVoiceStatus('connecting');
     setError('');
     setLastMessage('');
     setIsLoading(true);
     setFallbackVisible(false);
+    completedToolCallsRef.current.clear();
 
     try {
       await connectUiAutomationMcpBridge();
@@ -187,20 +247,29 @@ export const useRealtimeVoiceAssistant = () => {
 
       const audio = document.createElement('audio');
       audio.autoplay = true;
+      audio.setAttribute('playsinline', 'true');
       audioRef.current = audio;
       peer.ontrack = (event) => {
         audio.srcObject = event.streams[0];
+        void audio.play().catch(() => undefined);
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       streamRef.current = stream;
       stream.getAudioTracks().forEach((track) => peer.addTrack(track, stream));
 
       const channel = peer.createDataChannel('oai-events');
       dataChannelRef.current = channel;
       channel.addEventListener('open', () => {
-        setStatus('listening');
         connectedRef.current = true;
+        setConnected(true);
+        setVoiceStatus('listening');
         void buildPageContextMessage().then((text) => {
           sendEvent({
             type: 'conversation.item.create',
@@ -253,12 +322,25 @@ export const useRealtimeVoiceAssistant = () => {
         console.error('Error en useRealtimeVoiceAssistant start():', raw);
       }
       setError(resolveUserMessage(raw));
-      setStatus('error');
+      setVoiceStatus('error');
       setFallbackVisible(true);
     } finally {
       setIsLoading(false);
     }
-  }, [handleEvent, stop]);
+  }, [handleEvent, sendEvent, setVoiceStatus, stop]);
+
+  useEffect(() => {
+    const stopForBlockingUi = () => {
+      if (connectedRef.current) stopRef.current();
+    };
+
+    window.addEventListener('assistant-guided-steps:start', stopForBlockingUi);
+    window.addEventListener('support-chat:open', stopForBlockingUi);
+    return () => {
+      window.removeEventListener('assistant-guided-steps:start', stopForBlockingUi);
+      window.removeEventListener('support-chat:open', stopForBlockingUi);
+    };
+  }, []);
 
   return {
     status,
@@ -266,7 +348,7 @@ export const useRealtimeVoiceAssistant = () => {
     error,
     start,
     stop,
-    connected: connectedRef.current,
+    connected,
     isLoading,
     fallbackVisible,
   };

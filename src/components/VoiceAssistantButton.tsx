@@ -6,8 +6,9 @@ import '../styles/assistant.css';
 const statusText = {
   idle: 'Listo para iniciar',
   connecting: 'Conectando...',
-  listening: 'Escuchando...',
-  speaking: 'IA hablando...',
+  listening: 'Hiper te escucha',
+  thinking: 'Hiper procesando...',
+  speaking: 'Hiper respondiendo...',
   error: 'Error de conexion',
 };
 
@@ -29,6 +30,12 @@ const VoiceAssistantButton: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (active && (supportOpen || guidedStepsActive)) {
+      stop();
+    }
+  }, [active, guidedStepsActive, stop, supportOpen]);
+
   if (supportOpen || guidedStepsActive) {
     return null;
   }
@@ -47,9 +54,9 @@ const VoiceAssistantButton: React.FC = () => {
           if (active) stop();
           else void start();
         }}
-        aria-label={active ? 'Detener IA' : 'Abrir asistente de voz'}
+        aria-label={active ? 'Detener Hiper' : 'Hablar con Hiper'}
       >
-        {active ? 'Detener IA' : 'Hablar con IA'}
+        {active ? 'Detener Hiper' : 'Hablar con Hiper'}
       </button>
     </div>
   );

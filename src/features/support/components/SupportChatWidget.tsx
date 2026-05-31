@@ -9,15 +9,16 @@ import './supportChat.css';
 const WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  text: 'Hola, soy Maxi. Puedo responder dudas del portal, llenar campos del formulario, validarlo o llevarte a la sección que necesites. ¿En qué te ayudo?',
+  text: 'Hola, soy Maxi. Puedo guiarte en el portal, señalar dónde hacer clic, ayudarte con formularios o llevarte a la sección que necesites. ¿En qué te ayudo?',
 };
 
 const uid = () => Math.random().toString(36).slice(2);
 
 const SUGGESTIONS = [
   '¿Cómo cargo una factura?',
-  'Llena la descripción con Aceite vegetal 1 litro',
+  'Guíame para registrar un nuevo producto',
   'Llévame a la sección de facturas',
+  '¿Qué documentos necesito para registrarme?',
 ];
 
 export const SupportChatWidget: React.FC = () => {
@@ -47,14 +48,20 @@ export const SupportChatWidget: React.FC = () => {
       }, 7600);
     };
 
+    const closeSupportChat = () => {
+      setOpen(false);
+    };
+
     window.addEventListener('assistant-ui-target', onAssistantTarget);
+    window.addEventListener('support-chat:close', closeSupportChat);
     return () => {
       window.removeEventListener('assistant-ui-target', onAssistantTarget);
+      window.removeEventListener('support-chat:close', closeSupportChat);
       if (dockResetRef.current) {
         window.clearTimeout(dockResetRef.current);
       }
     };
-  }, []);
+  }, [setOpen]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -94,24 +101,49 @@ export const SupportChatWidget: React.FC = () => {
     }
   };
 
+  const clearChat = () => {
+    setMessages([WELCOME]);
+    convoRef.current = [];
+    setInput('');
+  };
+
   return (
     <>
       <button
         className={`support-fab support-fab--${dockSide}`}
-        aria-label={open ? 'Cerrar asistente' : 'Abrir asistente'}
-        onClick={() => setOpen((o) => !o)}
+        aria-label={open ? 'Cerrar asistente Maxi' : 'Abrir asistente Maxi'}
+        onClick={() => setOpen((currentOpen) => {
+          const nextOpen = !currentOpen;
+          if (nextOpen) {
+            window.dispatchEvent(new CustomEvent('support-chat:open'));
+          }
+          return nextOpen;
+        })}
+        title={open ? 'Cerrar asistente' : 'Hablar con Maxi'}
       >
-        {open ? '×' : 'IA'}
+        {open ? (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        ) : (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        )}
       </button>
 
       {open && (
-        <div className={`support-panel support-panel--${dockSide}`} role="dialog" aria-label="Asistente de soporte">
+        <div className={`support-panel support-panel--${dockSide}`} role="dialog" aria-label="Asistente Maxi">
           <div className="support-header">
             <span className="support-dot" />
-            <div>
+            <div className="support-header-info">
               <strong>Maxi · Asistente</strong>
-              <small>Hipermaxi</small>
+              <small>Hipermaxi Portal</small>
             </div>
+            <button
+              className="support-clear-btn"
+              onClick={clearChat}
+              title="Nueva conversación"
+              aria-label="Limpiar conversación"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.31"/></svg>
+            </button>
           </div>
 
           <div className="support-messages" ref={listRef}>
@@ -122,7 +154,11 @@ export const SupportChatWidget: React.FC = () => {
             ))}
             {loading && (
               <div className="support-msg assistant">
-                <div className="support-bubble support-typing">Escribiendo...</div>
+                <div className="support-bubble support-typing">
+                  <span className="support-typing-dot" />
+                  <span className="support-typing-dot" />
+                  <span className="support-typing-dot" />
+                </div>
               </div>
             )}
 
@@ -142,11 +178,15 @@ export const SupportChatWidget: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Escribe tu mensaje..."
+              placeholder="Escribe tu consulta..."
               rows={1}
             />
-            <button onClick={() => void send()} disabled={loading || !input.trim()}>
-              Enviar
+            <button
+              onClick={() => void send()}
+              disabled={loading || !input.trim()}
+              aria-label="Enviar mensaje"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </div>
         </div>

@@ -13,6 +13,11 @@ export interface OpenAiMessage {
   tool_call_id?: string;
 }
 
+export type KnowledgeSearchContext = {
+  pageContext?: unknown;
+  credentialState?: unknown;
+};
+
 /** One OpenAI turn: returns the assistant message (may contain tool_calls). */
 export async function assistantChat(
   messages: OpenAiMessage[],
@@ -30,11 +35,14 @@ export async function assistantChat(
 }
 
 /** Retrieves SOP chunks from the RAG (no generation) for the search_knowledge tool. */
-export async function knowledgeSearch(query: string): Promise<{ chunks: unknown[] }> {
+export async function knowledgeSearch(
+  query: string,
+  context: KnowledgeSearchContext = {},
+): Promise<{ chunks: unknown[] }> {
   const res = await fetch(`${API_URL}/api/knowledge/search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, ...context }),
   });
   if (!res.ok) {
     return { chunks: [] };

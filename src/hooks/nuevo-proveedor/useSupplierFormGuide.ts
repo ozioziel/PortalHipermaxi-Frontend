@@ -253,6 +253,7 @@ export const useSupplierFormGuide = ({
   }, [hasSpeech]);
 
   const openGuide = () => {
+    window.dispatchEvent(new CustomEvent('support-chat:close'));
     moveToGuideStep(0);
     setIsOpen(true);
     onSectionChange?.(0);

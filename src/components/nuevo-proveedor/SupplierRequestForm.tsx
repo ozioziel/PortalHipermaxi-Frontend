@@ -288,6 +288,7 @@ export const SupplierRequestForm: React.FC = () => {
 
           <button
             className="btn btn-secondary"
+            data-ai-action="start-supplier-guide"
             data-tour="start-guide-button"
             onClick={guide.openGuide}
             style={supportCardButtonStyle}

@@ -732,6 +732,26 @@ export const startNewOrderFlow = (): AssistantActionResult => {
   };
 };
 
+export const startNewSupplierGuide = (): AssistantActionResult => {
+  const alreadyOnSupplierPage = window.location.pathname === '/nuevo-proveedor';
+
+  window.dispatchEvent(new CustomEvent('support-chat:close'));
+  navigateTo('/nuevo-proveedor');
+  delayedClick('start-supplier-guide', alreadyOnSupplierPage ? 220 : 700);
+  showGlobalMessage('Te llevo a Nuevo Proveedor e inicio la guia visual.');
+
+  return {
+    ok: true,
+    message: 'Estoy abriendo Nuevo Proveedor y ejecutando Iniciar guia.',
+    data: {
+      route: '/nuevo-proveedor',
+      action: 'start-supplier-guide',
+      guide: 'nuevo-proveedor',
+      deactivateVoiceAssistant: true,
+    },
+  };
+};
+
 export const getFormState = (): AssistantActionResult => {
   const fields = getVisibleFields().map((element) => ({
     ...summarizeField(element),
@@ -834,6 +854,25 @@ export const performTask = (task: string, value?: string): AssistantActionResult
   }
 
   if (
+    (
+      normalizedTask.includes('proveedor') ||
+      normalizedTask.includes('plataforma') ||
+      normalizedTask.includes('portal')
+    ) &&
+    (
+      normalizedTask.includes('soy nuevo') ||
+      normalizedTask.includes('soy nueva') ||
+      normalizedTask.includes('nuevo proveedor') ||
+      normalizedTask.includes('ser proveedor') ||
+      normalizedTask.includes('registr') ||
+      normalizedTask.includes('alta')
+    ) &&
+    !normalizedTask.includes('producto')
+  ) {
+    return startNewSupplierGuide();
+  }
+
+  if (
     (normalizedTask.includes('nuevo') || normalizedTask.includes('agregar') || normalizedTask.includes('anad') || normalizedTask.includes('crear')) &&
     normalizedTask.includes('producto') &&
     (normalizedTask.includes('guia') || normalizedTask.includes('guiada') || normalizedTask.includes('paso') || normalizedTask.includes('soporte') || normalizedTask.includes('ayuda'))
@@ -897,6 +936,341 @@ export const performTask = (task: string, value?: string): AssistantActionResult
   return { ok: false, message: `No pude ejecutar la tarea: ${task}` };
 };
 
+// ─── Auth / Session ───────────────────────────────────────────────────────────
+
+type StoredSession = { user?: { id: string; email: string; role: string; name?: string }; token?: string };
+
+export const authGetSession = (): AssistantActionResult => {
+  try {
+    const raw = localStorage.getItem('session');
+    if (!raw) {
+      return { ok: true, message: 'El usuario no está autenticado.', data: { loggedIn: false } };
+    }
+    const parsed = JSON.parse(raw) as StoredSession;
+    if (!parsed.user || !parsed.token) {
+      return { ok: true, message: 'El usuario no está autenticado.', data: { loggedIn: false } };
+    }
+    const { name, email, role } = parsed.user;
+    return {
+      ok: true,
+      message: `El usuario ya está autenticado como ${name || email} (rol: ${role}).`,
+      data: { loggedIn: true, name: name || null, email, role },
+    };
+  } catch {
+    return { ok: true, data: { loggedIn: false } };
+  }
+};
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+
+const VALID_ROUTES = ['/', '/productos', '/facturas', '/avd', '/nuevo-proveedor', '/admin/dashboard', '/admin/trazabilidad', '/admin/preguntas-frecuentes', '/admin/interacciones-ia', '/admin/actividad-usuarios'];
+
+export const navGoToPage = (route: string, reason?: string): AssistantActionResult => {
+  if (!VALID_ROUTES.includes(route)) {
+    return { ok: false, message: `Ruta no válida: ${route}. Disponibles: ${VALID_ROUTES.join(', ')}` };
+  }
+  navigateTo(route);
+  if (reason) showGlobalMessage(reason);
+  return { ok: true, message: `Navegando a ${route}.`, data: { route } };
+};
+
+// ─── Support & Escalation ────────────────────────────────────────────────────
+
+const ESCALATION_KEYWORDS = ['no puedo acceder', 'credenciales', 'contrasena', 'error tecnico', 'falla', 'no carga', 'bloqueado', 'urgente', 'error interno', 'no funciona', 'perdio acceso', 'olvide', 'no recuerdo', 'no me llego', 'no recibi'];
+const CREDENTIALS_KEYWORDS = ['credencial', 'contrasena', 'acceder', 'acceso', 'olvide', 'no recuerdo', 'no me llego', 'no recibi', 'perdio acceso', 'bloqueado', 'usuario'];
+
+export const supportDetectEscalation = (reason: string): AssistantActionResult => {
+  const normalized = normalize(reason);
+  const shouldEscalate = ESCALATION_KEYWORDS.some((kw) => normalized.includes(normalize(kw)));
+  const isCredentialsCase = CREDENTIALS_KEYWORDS.some((kw) => normalized.includes(normalize(kw)));
+
+  return {
+    ok: true,
+    message: shouldEscalate
+      ? 'Esta situación requiere gestión con el equipo de soporte de Hipermaxi.'
+      : 'Puedo seguir intentando ayudarte desde aquí.',
+    data: {
+      shouldEscalate,
+      isCredentialsCase,
+      suggestedGuide: isCredentialsCase ? 'credenciales' : null,
+      channel: shouldEscalate ? 'email' : null,
+      contact: shouldEscalate ? 'soportehub@hipermaxi.com' : null,
+      whatsapp: shouldEscalate ? '+591 78401543' : null,
+      reason,
+      instruction: isCredentialsCase
+        ? 'Llama help_get_guide con topic="credenciales" para mostrar los pasos exactos del proceso SOP-SR-03 y support_get_contacts para mostrar los canales. No intentes enviar nada automaticamente.'
+        : 'Llama support_get_contacts para mostrar los canales de soporte disponibles.',
+    },
+  };
+};
+
+export const supportGetContacts = (): AssistantActionResult => ({
+  ok: true,
+  message: 'Canales de soporte disponibles.',
+  data: {
+    email: 'soportehub@hipermaxi.com',
+    whatsapp: '+591 78401543',
+    hours: 'Lunes a viernes, 8:00 – 18:00 (hora Bolivia)',
+    note: 'El WhatsApp es para orientación inicial. La solicitud formal debe enviarse al correo.',
+    channels: ['Email (formal)', 'WhatsApp (orientación)'],
+  },
+});
+
+export const supportCreateTicket = (issue: string, priority = 'medium'): AssistantActionResult => {
+  const ticketId = `TKT-${Date.now().toString(36).toUpperCase()}`;
+  showGlobalMessage(`Ticket ${ticketId} registrado. El equipo de soporte te contactará pronto.`);
+  return {
+    ok: true,
+    message: `Ticket creado: ${ticketId}. Te contactarán por soportehub@hipermaxi.com en 1-2 días hábiles.`,
+    data: {
+      ticketId,
+      issue,
+      priority,
+      status: 'open',
+      createdAt: new Date().toISOString(),
+      estimatedResponse: '1-2 días hábiles',
+      contact: 'soportehub@hipermaxi.com',
+    },
+  };
+};
+
+// ─── Help & FAQ ───────────────────────────────────────────────────────────────
+
+const PAGE_EXPLANATIONS: Record<string, string> = {
+  '/': 'Página de inicio del Portal Hipermaxi. Desde aquí puedes acceder a Productos, Facturas, Aviso de Despacho o registrarte como nuevo proveedor.',
+  '/productos': 'Módulo de Productos. Puedes ver, agregar y gestionar tus productos: descripción, código de barra, registro sanitario, imágenes y precios.',
+  '/facturas': 'Módulo de Facturas. Carga tus facturas en PDF o XML seleccionando la orden de compra correspondiente.',
+  '/avd': 'Aviso de Despacho (AVD). Notifica a Hipermaxi que tu pedido está listo: completa datos de despacho y confirma.',
+  '/nuevo-proveedor': 'Registro de Nuevo Proveedor. Completa datos generales, contactos y documentos para solicitar acceso como proveedor.',
+  '/admin/dashboard': 'Dashboard Administrativo. Métricas generales: facturas cargadas, productos registrados, proveedores activos y uso del asistente Maxi.',
+};
+
+export const helpExplainPage = (route?: string): AssistantActionResult => {
+  const currentRoute = route || window.location.pathname;
+  const explanation = PAGE_EXPLANATIONS[currentRoute] ?? `Sección ${currentRoute}. Puedes preguntarme qué campos o acciones están disponibles aquí.`;
+  return {
+    ok: true,
+    message: explanation,
+    data: { route: currentRoute, explanation },
+  };
+};
+
+const FAQ_ITEMS = [
+  { q: 'como cargo una factura', a: 'Ve a Facturas, selecciona la orden de compra, adjunta el PDF o XML de tu factura y presiona Enviar.' },
+  { q: 'como registro un nuevo producto', a: 'Ve a Productos, presiona Nuevo, completa la descripción, código de barra, registro sanitario y otros datos requeridos.' },
+  { q: 'que es el avd', a: 'El Aviso de Despacho (AVD) es la notificación que haces a Hipermaxi cuando tu pedido está listo para ser entregado.' },
+  { q: 'como me registro como proveedor', a: 'Ve a Nuevo Proveedor, completa el formulario con datos generales, contactos y documentos. El equipo revisará tu solicitud.' },
+  {
+    q: 'olvide mi contrasena credenciales acceso no puedo entrar perdí acceso bloqueado',
+    a: 'Para recuperar tus credenciales debes seguir el proceso SOP-SR-03:\n1. Envía un correo a soportehub@hipermaxi.com con el asunto "Solicitud de Reenvío de Credenciales de Acceso".\n2. Incluye: Nombre del Proveedor, Razón Social, NIT, Rol, Email, Teléfono y datos del catálogo (Código Proveedor, Región, Nombre del Vendedor).\n3. Recibirás un archivo Excel para completar y devolver.\n4. Una vez validado, las credenciales se reenvían al correo del Encargado HUB.\nPara orientación previa puedes escribir al WhatsApp +591 78401543.',
+  },
+  { q: 'que formatos acepta la factura', a: 'Las facturas deben estar en formato PDF o XML, con un máximo de 5 MB por archivo.' },
+  { q: 'cuanto tarda en procesarse una factura', a: 'El procesamiento puede tomar entre 1 y 5 días hábiles.' },
+  { q: 'como ver el estado de mis facturas', a: 'En la sección Facturas puedes ver el listado con el estado actual de cada factura enviada.' },
+  { q: 'puedo editar un producto ya guardado', a: 'Sí, en la lista de Productos puedes seleccionar un producto y editar sus datos.' },
+  { q: 'que documentos necesito para registrarme', a: 'Necesitas: NIT de la empresa, poder notarial del representante legal y datos de contacto del responsable.' },
+  { q: 'informacion necesaria para solicitar credenciales', a: 'Debes enviar: Nombre de Proveedor, Razón Social, NIT, Rol, Email, Teléfono y datos del catálogo (Código Proveedor ya registrado, Región, Nombre del Vendedor, Nombre del Gerente Comercial). Sin esta información la solicitud será devuelta.' },
+];
+
+export const helpSearchFaq = (query: string): AssistantActionResult => {
+  const normalizedQuery = normalize(query);
+  const tokens = normalizedQuery.split(/\s+/).filter((t) => t.length > 3);
+  const matches = FAQ_ITEMS.filter((item) => {
+    const q = normalize(item.q);
+    return tokens.some((t) => q.includes(t)) || q.split(' ').some((w) => w.length > 3 && normalizedQuery.includes(w));
+  });
+
+  return {
+    ok: matches.length > 0,
+    message: matches.length > 0 ? `Encontré ${matches.length} respuesta(s).` : 'No encontré respuesta específica. Contacta a soportehub@hipermaxi.com.',
+    data: { query, results: matches.slice(0, 3) },
+  };
+};
+
+const GUIDES: Record<string, { title: string; steps: string[]; contacts?: Record<string, string>; note?: string }> = {
+  'credenciales': {
+    title: 'Recuperar credenciales de acceso (SOP-SR-03)',
+    steps: [
+      'Envía un correo a soportehub@hipermaxi.com con el asunto exacto: "Solicitud de Reenvío de Credenciales de Acceso".',
+      'En el correo incluye: Nombre del Proveedor, Razón Social, NIT.',
+      'Indica tu Rol: Encargado de Sistemas, Encargado HUB o Encargado de Área Comercial.',
+      'Agrega tu Email, Teléfono y los datos del catálogo: Código Proveedor, Región y Nombre del Vendedor.',
+      'El equipo de Compras te enviará un archivo Excel para completar y devolver.',
+      'Una vez validada tu información, Soporte reenviará las credenciales al correo del Encargado HUB autorizado.',
+      'Confirma el acceso exitoso al portal y comunícalo a soportehub@hipermaxi.com para cerrar el ticket.',
+    ],
+    contacts: {
+      email: 'soportehub@hipermaxi.com',
+      whatsapp: '+591 78401543 (orientación inicial)',
+    },
+    note: 'Este proceso aplica solo a proveedores activos con credenciales previamente creadas. Para registro nuevo de proveedor, usa la sección "Nuevo Proveedor".',
+  },
+  'registro-producto': {
+    title: 'Registrar un nuevo producto',
+    steps: [
+      'Ve a la sección Productos desde el menú principal.',
+      'Presiona el botón "Nuevo" en la barra de herramientas.',
+      'Completa la descripción del producto (nombre completo).',
+      'Ingresa el código de barra del proveedor.',
+      'Agrega el registro sanitario y su fecha de vencimiento.',
+      'Sube las imágenes del producto (frente, trasero, lateral).',
+      'Si aplica, agrega precio en el catálogo de precios.',
+      'Presiona "Guardar" para registrar el producto.',
+    ],
+  },
+  'carga-factura': {
+    title: 'Cargar una factura',
+    steps: [
+      'Ve a la sección Facturas desde el menú principal.',
+      'Selecciona la orden de compra correspondiente.',
+      'Presiona "Cargar Factura" o el ícono de carga.',
+      'Selecciona el archivo PDF o XML (máx. 5 MB).',
+      'Verifica que los datos sean correctos.',
+      'Presiona "Enviar" para subir la factura.',
+      'Espera la confirmación del procesamiento (1-5 días hábiles).',
+    ],
+  },
+  'avd': {
+    title: 'Registrar un Aviso de Despacho',
+    steps: [
+      'Ve a la sección AVD desde el menú principal.',
+      'Selecciona el pedido que vas a despachar.',
+      'Completa los datos: fecha, transportista y número de guía.',
+      'Verifica las cantidades y productos del despacho.',
+      'Presiona "Confirmar Despacho" para registrar el AVD.',
+    ],
+  },
+  'nuevo-proveedor': {
+    title: 'Registrarse como nuevo proveedor',
+    steps: [
+      'Ve a la sección "Nuevo Proveedor" desde la pantalla de inicio.',
+      'Completa los datos generales: nombre de empresa, NIT, dirección.',
+      'Agrega tus contactos: nombre, cargo, correo y teléfono.',
+      'Sube los documentos requeridos: NIT y poder del representante legal.',
+      'Revisa el resumen de tu solicitud.',
+      'Envía la solicitud y espera la confirmación del equipo Hipermaxi.',
+    ],
+  },
+};
+
+export const helpGetGuide = (topic: string): AssistantActionResult => {
+  const normalizedTopic = normalize(topic);
+  const key = Object.keys(GUIDES).find(
+    (k) => normalize(k).includes(normalizedTopic) || normalizedTopic.includes(normalize(k)) || normalizedTopic.split(/[-\s]+/).some((w) => w.length > 3 && normalize(k).includes(w)),
+  );
+
+  if (!key) {
+    return {
+      ok: false,
+      message: 'No encontré guía para ese tema. Temas disponibles: registro-producto, carga-factura, avd, nuevo-proveedor.',
+      data: { availableGuides: Object.keys(GUIDES) },
+    };
+  }
+
+  return { ok: true, message: `Guía para: ${GUIDES[key].title}`, data: GUIDES[key] };
+};
+
+// ─── Invoices / Files ────────────────────────────────────────────────────────
+
+export const invoiceGetRequirements = (): AssistantActionResult => ({
+  ok: true,
+  message: 'Requisitos para carga de facturas.',
+  data: {
+    formats: ['PDF', 'XML'],
+    maxSize: '5 MB',
+    requirements: [
+      'La factura debe corresponder a una orden de compra existente en el sistema.',
+      'El NIT del proveedor debe coincidir con el registrado.',
+      'La factura no puede estar duplicada.',
+      'Debe incluir número, fecha, monto y descripción.',
+      'El archivo debe ser legible y sin contraseña.',
+    ],
+    tip: 'Si tienes problemas, verifica que el archivo no esté dañado y que sea menor a 5 MB.',
+    contact: 'soportehub@hipermaxi.com',
+  },
+});
+
+const INVOICE_ERRORS: Record<string, string> = {
+  'formato': 'La factura debe estar en formato PDF o XML. No se aceptan imágenes JPG, PNG ni documentos Word.',
+  'tamano': 'El archivo supera el límite de 5 MB. Intenta comprimir el PDF antes de subirlo.',
+  'duplicada': 'Esta factura ya fue registrada. Verifica el número de factura para evitar duplicados.',
+  'proveedor-no-registrado': 'El NIT del proveedor no está registrado. Contacta a soportehub@hipermaxi.com.',
+  'orden-no-encontrada': 'No se encontró la orden de compra asociada. Verifica que el número de orden sea correcto.',
+  'fecha-invalida': 'La fecha de la factura no es válida o está fuera del período permitido.',
+};
+
+export const invoiceExplainError = (errorType: string): AssistantActionResult => {
+  const normalized = normalize(errorType);
+  const key = Object.keys(INVOICE_ERRORS).find((k) => normalize(k).includes(normalized) || normalized.includes(normalize(k)));
+  const explanation = key ? INVOICE_ERRORS[key] : `Error en la carga de factura. Contacta a soportehub@hipermaxi.com para más ayuda.`;
+
+  return {
+    ok: true,
+    message: explanation,
+    data: { errorType, explanation, contact: 'soportehub@hipermaxi.com' },
+  };
+};
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+export const dashboardGetSummary = (): AssistantActionResult => ({
+  ok: true,
+  message: 'Resumen del dashboard administrativo.',
+  data: {
+    metrics: {
+      proveedoresActivos: 48,
+      productosRegistrados: 312,
+      facturasCargadasMes: 127,
+      tasaCompletadoFormularios: '84%',
+      interaccionesIA: 253,
+      ticketsSoporte: 12,
+    },
+    period: 'Último mes',
+    lastUpdated: new Date().toISOString(),
+    topModule: 'Productos',
+  },
+});
+
+const METRIC_EXPLANATIONS: Record<string, string> = {
+  'facturas-cargadas': 'Número total de facturas enviadas por proveedores en el período seleccionado.',
+  'productos-registrados': 'Total de productos únicos registrados en el catálogo del portal.',
+  'proveedores-activos': 'Número de proveedores con actividad en el período.',
+  'tasa-completado': 'Porcentaje de formularios iniciados que fueron completados y enviados exitosamente.',
+  'interacciones-ia': 'Número de consultas al asistente Maxi (chat y voz) en el período.',
+  'tickets-soporte': 'Tickets de soporte abiertos en el período actual.',
+};
+
+export const dashboardExplainMetric = (metric: string): AssistantActionResult => {
+  const normalized = normalize(metric);
+  const key = Object.keys(METRIC_EXPLANATIONS).find(
+    (k) => normalize(k).includes(normalized) || normalized.includes(normalize(k)) || normalized.split(/[-\s]+/).some((w) => w.length > 3 && normalize(k).includes(w)),
+  );
+  const explanation = key ? METRIC_EXPLANATIONS[key] : `La métrica "${metric}" refleja el rendimiento del portal en esa categoría.`;
+
+  return {
+    ok: true,
+    message: explanation,
+    data: { metric, explanation },
+  };
+};
+
+// ─── Voice confirmation ───────────────────────────────────────────────────────
+
+export const voiceConfirmAction = (action: string, description: string): AssistantActionResult => {
+  showGlobalMessage(`Confirmar: ${action}. Responde "sí, confirmo" o "cancelar".`);
+  return {
+    ok: true,
+    message: `Para ejecutar "${action}" necesito tu confirmación. ${description} ¿Confirmas esta acción?`,
+    data: {
+      action,
+      description,
+      needsConfirmation: true,
+      confirmPhrase: 'sí, confirmo',
+      cancelPhrase: 'cancelar',
+    },
+  };
+};
+
 export const executeAssistantAction = async (actionName: string, args: Record<string, unknown> = {}): Promise<AssistantActionResult> => {
   switch (stripUiPrefix(actionName)) {
     case 'get_page_context':
@@ -936,6 +1310,8 @@ export const executeAssistantAction = async (actionName: string, args: Record<st
       return startProductCreationGuide();
     case 'start_new_order_flow':
       return startNewOrderFlow();
+    case 'start_new_supplier_guide':
+      return startNewSupplierGuide();
     case 'data_get_products':
       return getProductsData(Number(args.limit || 20));
     case 'data_find_product':
@@ -958,6 +1334,39 @@ export const executeAssistantAction = async (actionName: string, args: Record<st
       return autofillFromUserMessage(String(args.message || ''));
     case 'perform_task':
       return performTask(String(args.task || ''), args.value ? String(args.value) : undefined);
+    // Navigation
+    case 'nav_go_to_page':
+      return navGoToPage(String(args.route || '/'), args.reason ? String(args.reason) : undefined);
+    // Support
+    case 'support_detect_escalation':
+      return supportDetectEscalation(String(args.reason || ''));
+    case 'support_get_contacts':
+      return supportGetContacts();
+    case 'support_create_ticket':
+      return supportCreateTicket(String(args.issue || ''), args.priority ? String(args.priority) : 'medium');
+    // Help / FAQ
+    case 'help_explain_page':
+      return helpExplainPage(args.route ? String(args.route) : undefined);
+    case 'help_search_faq':
+      return helpSearchFaq(String(args.query || ''));
+    case 'help_get_guide':
+      return helpGetGuide(String(args.topic || ''));
+    // Invoices
+    case 'invoice_get_requirements':
+      return invoiceGetRequirements();
+    case 'invoice_explain_error':
+      return invoiceExplainError(String(args.errorType || ''));
+    // Dashboard
+    case 'dashboard_get_summary':
+      return dashboardGetSummary();
+    case 'dashboard_explain_metric':
+      return dashboardExplainMetric(String(args.metric || ''));
+    // Voice confirmation
+    case 'voice_confirm_action':
+      return voiceConfirmAction(String(args.action || ''), String(args.description || ''));
+    // Auth / session
+    case 'auth_get_session':
+      return authGetSession();
     default:
       return { ok: false, message: `Tool no soportada: ${actionName}` };
   }

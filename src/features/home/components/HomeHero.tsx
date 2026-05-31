@@ -12,7 +12,7 @@ const HomeHero: React.FC = () => {
       <div className="hero-card" style={{width:'100%'}}>
         <AppCard className="feature-accent">
           <SectionTitle title="Portal Hipermaxi" subtitle="Plataforma para proveedores de Hipermaxi S.A." />
-          <p className="text-muted">Accede a información y servicios especializados de manera ágil y segura.</p>
+          <p className="text-muted">Accede a informacion y servicios especializados de manera agil y segura.</p>
         </AppCard>
       </div>
     </section>
