@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../core/auth/AuthContext';
+import HelpTooltip from '../../../components/ui/HelpTooltip';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -43,9 +46,16 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const [account, setAccount] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const auth = useAuth();
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
+
+  const ADMIN_EMAIL = 'admin@hipermaxi.com';
+  const ADMIN_PASSWORD = 'Admin123*';
+  const CLIENT_EMAIL = 'cliente@hipermaxi.com';
+  const CLIENT_PASSWORD = 'Cliente123*';
 
   const resetForm = () => {
     setAccount('');
@@ -59,26 +69,32 @@ const LoginModal: React.FC<LoginModalProps> = ({
     onClose();
   };
 
-  const fillTest = () => {
-    setAccount('cuenta@gmail.com');
-    setUsername('usuario');
-    setPassword('12345678');
+  const fillAdminCredentials = () => {
+    setAccount(ADMIN_EMAIL);
+    setUsername('admin');
+    setPassword(ADMIN_PASSWORD);
     setError('');
   };
 
-  const handleEnter = () => {
+  const fillClientCredentials = () => {
+    setAccount(CLIENT_EMAIL);
+    setUsername('cliente');
+    setPassword(CLIENT_PASSWORD);
     setError('');
-    const VALID_ACCOUNT = 'cuenta@gmail.com';
-    const VALID_USERNAME = 'usuario';
-    const VALID_PASSWORD = '12345678';
+  };
 
-    const isValid = account.trim() === VALID_ACCOUNT && username.trim() === VALID_USERNAME && password === VALID_PASSWORD;
-    if (isValid) {
-      resetForm();
+  const handleEnter = async () => {
+    setError('');
+    const success = await auth.login(account.trim(), password);
+    if (success) {
       onClose();
-      onSuccess();
+      if (auth.user && auth.user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        onSuccess();
+      }
     } else {
-      setError('Datos incorrectos. Usa las credenciales de prueba.');
+      setError('Inicio de sesión fallido. Verifique sus credenciales.');
     }
   };
 
@@ -89,22 +105,34 @@ const LoginModal: React.FC<LoginModalProps> = ({
         <p style={styles.subtitle}>Usa credenciales de prueba para acceder al flujo demo.</p>
 
         <div style={{...styles.fieldRow}}>
-          <label style={{color:'#6b7280',fontSize:13}}>Cuenta</label>
+          <label style={{display:'flex',alignItems:'center',gap:6,color:'#6b7280',fontSize:13}}>
+            Cuenta
+            <HelpTooltip text="Ingrese su cuenta de acceso, por ejemplo cuenta@empresa.com." ariaLabel="Ayuda Cuenta" />
+          </label>
           <input style={styles.input} placeholder="Cuenta" value={account} onChange={e=>setAccount(e.target.value)} />
         </div>
 
         <div style={{...styles.fieldRow}}>
-          <label style={{color:'#6b7280',fontSize:13}}>Usuario</label>
+          <label style={{display:'flex',alignItems:'center',gap:6,color:'#6b7280',fontSize:13}}>
+            Usuario
+            <HelpTooltip text="Ingrese su nombre de usuario de prueba." ariaLabel="Ayuda Usuario" />
+          </label>
           <input style={styles.input} placeholder="Usuario" value={username} onChange={e=>setUsername(e.target.value)} />
         </div>
 
         <div style={{...styles.fieldRow}}>
-          <label style={{color:'#6b7280',fontSize:13}}>Contraseña</label>
+          <label style={{display:'flex',alignItems:'center',gap:6,color:'#6b7280',fontSize:13}}>
+            Contraseña
+            <HelpTooltip text="Ingrese la contraseña de prueba proporcionada para acceso." ariaLabel="Ayuda Contraseña" />
+          </label>
           <input type="password" style={styles.input} placeholder="Contraseña" value={password} onChange={e=>setPassword(e.target.value)} />
         </div>
 
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
-          <button style={styles.linkBtn} onClick={fillTest}>Colocar datos de prueba</button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button type="button" style={styles.linkBtn} onClick={fillClientCredentials}>Usar cuenta cliente</button>
+            <button type="button" style={styles.linkBtn} onClick={fillAdminCredentials}>Usar cuenta admin</button>
+          </div>
           <div style={{color:'#dc2626',fontSize:13}}>{error}</div>
         </div>
 

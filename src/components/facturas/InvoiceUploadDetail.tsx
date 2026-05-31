@@ -1,4 +1,5 @@
 import React, { useId, useRef, useState } from 'react';
+import HelpTooltip from '../ui/HelpTooltip';
 import type {
   PurchaseOrder,
   UploadedInvoice,
@@ -169,7 +170,13 @@ const InvoiceUploadDetail: React.FC<InvoiceUploadDetailProps> = ({
       ) : null}
 
       <section className="invoice-section">
-        <div className="invoice-section__title">Observación</div>
+        <div className="invoice-section__title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          Observación
+          <HelpTooltip
+            text="Agregue información adicional solo si es necesario."
+            ariaLabel="Ayuda Observación"
+          />
+        </div>
         <div className="invoice-section__body">
           <textarea
             className="invoice-textarea"
@@ -181,7 +188,13 @@ const InvoiceUploadDetail: React.FC<InvoiceUploadDetailProps> = ({
       </section>
 
       <section className="invoice-section">
-        <div className="invoice-section__title">Factura Digital</div>
+        <div className="invoice-section__title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          Factura Digital
+          <HelpTooltip
+            text="Seleccione el archivo de la factura correspondiente a esta recepción."
+            ariaLabel="Ayuda Factura Digital"
+          />
+        </div>
         <div className="invoice-section__body">
           <p className="invoice-helper-text">
             Puede cargar más de una factura al mismo tiempo.

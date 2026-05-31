@@ -1,4 +1,5 @@
 import React from 'react';
+import HelpTooltip from '../ui/HelpTooltip';
 import { supplierRegions } from '../../data/nuevo-proveedor/supplierRegions';
 import type {
   SupplierRequestErrors,
@@ -52,6 +53,15 @@ const errorStyle: React.CSSProperties = {
   color: '#dc2626',
 };
 
+const helpTexts: Record<string, string> = {
+  providerCode: 'Código de proveedor si lo conoces. De lo contrario dejar vacío.',
+  region: 'Región o departamento asociado al proveedor.',
+  sellerName: 'Ingrese el nombre de la persona que atiende ventas.',
+  sellerPhone: 'Ingrese un número de contacto válido. Ejemplo: 78401543',
+  hipermaxiCommercialManager: 'Ingrese el nombre del gerente comercial de Hipermaxi.',
+  observations: 'Agregue información adicional solo si es necesario.',
+};
+
 export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
   formData,
   errors,
@@ -68,8 +78,9 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
 
       <div style={fieldsGridStyle}>
         <div style={fieldWrapperStyle} data-tour="supplier-code-input">
-          <label htmlFor="providerCode" style={labelStyle}>
+          <label htmlFor="providerCode" style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
             Código proveedor
+            <HelpTooltip text={helpTexts.providerCode} ariaLabel="Ayuda Código proveedor" />
           </label>
           <input
             id="providerCode"
@@ -82,8 +93,9 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
         </div>
 
         <div style={fieldWrapperStyle} data-tour="supplier-region-input">
-          <label htmlFor="region" style={labelStyle}>
+          <label htmlFor="region" style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
             Región
+            <HelpTooltip text={helpTexts.region} ariaLabel="Ayuda Región" />
           </label>
           <select
             id="region"
@@ -102,8 +114,9 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
         </div>
 
         <div style={fieldWrapperStyle}>
-          <label htmlFor="sellerName" style={labelStyle}>
+          <label htmlFor="sellerName" style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
             Nombre del vendedor
+            <HelpTooltip text={helpTexts.sellerName} ariaLabel="Ayuda Nombre del vendedor" />
           </label>
           <input
             id="sellerName"
@@ -116,8 +129,9 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
         </div>
 
         <div style={fieldWrapperStyle}>
-          <label htmlFor="sellerPhone" style={labelStyle}>
+          <label htmlFor="sellerPhone" style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
             Teléfono del vendedor
+            <HelpTooltip text={helpTexts.sellerPhone} ariaLabel="Ayuda Teléfono del vendedor" />
           </label>
           <input
             id="sellerPhone"
@@ -131,8 +145,12 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
         </div>
 
         <div style={fieldWrapperStyle}>
-          <label htmlFor="hipermaxiCommercialManager" style={labelStyle}>
+          <label htmlFor="hipermaxiCommercialManager" style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
             Nombre del Gerente Comercial Hipermaxi
+            <HelpTooltip
+              text={helpTexts.hipermaxiCommercialManager}
+              ariaLabel="Ayuda Nombre del Gerente Comercial Hipermaxi"
+            />
           </label>
           <input
             id="hipermaxiCommercialManager"
@@ -149,8 +167,9 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
         </div>
 
         <div style={{ ...fieldWrapperStyle, gridColumn: '1 / -1' }}>
-          <label htmlFor="observations" style={labelStyle}>
+          <label htmlFor="observations" style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
             Observaciones
+            <HelpTooltip text={helpTexts.observations} ariaLabel="Ayuda Observaciones" />
           </label>
           <textarea
             id="observations"

@@ -36,6 +36,8 @@ export const useRealtimeVoiceAssistant = () => {
   const [status, setStatus] = useState<VoiceStatus>('idle');
   const [lastMessage, setLastMessage] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [fallbackVisible, setFallbackVisible] = useState(false);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -104,9 +106,21 @@ export const useRealtimeVoiceAssistant = () => {
     }
 
     if (type === 'error') {
-      const message = (event.error as { message?: string } | undefined)?.message || 'Error de conexion realtime.';
-      setError(message);
+      const rawMsg = (event.error as { message?: string } | undefined)?.message || 'Error de conexion realtime.';
+      const lower = String(rawMsg).toLowerCase();
+      let userMessage = 'Ahora mismo no puedo conectarme con el asistente. Puedes contactar a soporte por otro medio.';
+      if (lower.includes('timeout')) userMessage = 'La conexión con el asistente tardó demasiado.';
+      else if (lower.includes('network') || lower.includes('failed to fetch') || lower.includes('connection')) userMessage = 'Error de red al conectar con el servicio.';
+      else if (lower.includes('401') || lower.includes('api key') || lower.includes('invalid')) userMessage = 'Problema de autorización con la API del asistente.';
+
+      if (import.meta.env && import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.error('Realtime error event:', rawMsg);
+      }
+
+      setError(userMessage);
       setStatus('error');
+      setFallbackVisible(true);
     }
   }, [handleToolCall, sendEvent]);
 
@@ -130,6 +144,8 @@ export const useRealtimeVoiceAssistant = () => {
     setStatus('connecting');
     setError('');
     setLastMessage('');
+    setIsLoading(true);
+    setFallbackVisible(false);
 
     try {
       await connectUiAutomationMcpBridge();
@@ -205,9 +221,31 @@ export const useRealtimeVoiceAssistant = () => {
       });
     } catch (caught) {
       stop();
-      const message = caught instanceof Error ? caught.message : 'Error de conexion Realtime.';
-      setError(message);
+      // Map known errors to user-friendly messages
+      const raw = caught instanceof Error ? caught.message : String(caught);
+
+      // Detect common cases
+      let userMessage = 'Ahora mismo no puedo conectarme con el asistente. Puedes contactar a soporte por otro medio.';
+
+      const lower = raw.toLowerCase();
+      if (lower.includes('404')) userMessage = 'El servicio no fue encontrado (404).';
+      else if (lower.includes('500')) userMessage = 'El servicio encontró un error interno (500).';
+      else if (lower.includes('timeout')) userMessage = 'La solicitud tardó demasiado y se agotó el tiempo de espera.';
+      else if (lower.includes('network') || lower.includes('failed to fetch') || lower.includes('connection')) userMessage = 'Error de red al conectar con el servicio.';
+      else if (lower.includes('api key') || lower.includes('invalid')) userMessage = 'La clave de la API no es válida o faltante.';
+      else if (lower.includes('no se pudo crear la sesion') || lower.includes('efimero')) userMessage = 'No se pudo iniciar la sesión del asistente.';
+
+      // Only log full error details in development
+      if (import.meta.env && import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.error('Error en useRealtimeVoiceAssistant start():', raw);
+      }
+
+      setError(userMessage);
       setStatus('error');
+      setFallbackVisible(true);
+    } finally {
+      setIsLoading(false);
     }
   }, [handleEvent, stop]);
 
@@ -218,5 +256,7 @@ export const useRealtimeVoiceAssistant = () => {
     start,
     stop,
     connected: connectedRef.current,
+    isLoading,
+    fallbackVisible,
   };
 };

@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import HelpTooltip from '../../../components/ui/HelpTooltip';
 import ProductImagesSection from './ProductImagesSection';
 import PriceCatalogSection from './PriceCatalogSection';
 import type { ProductFormState } from '../../support/types';
@@ -14,12 +15,26 @@ const ProductFormSections: React.FC<Props> = ({ formState, errors, onChange }) =
   const [openImages, setOpenImages] = useState(true);
   const [openCatalog, setOpenCatalog] = useState(true);
 
+  const helpTexts: Record<string, string> = {
+    description: 'Describa el producto de forma clara y concisa.',
+    unit: 'Seleccione la unidad de medida usada para la venta.',
+    internalCode: 'Ingrese el código interno del proveedor o producto.',
+    label: 'Ingrese la etiqueta principal del producto.',
+    barcode: 'Ingrese el código de barras si está disponible.',
+    dimensions: 'Indique las dimensiones en formato ejemplo: 10 x 10 x 25 cm.',
+    supplierName: 'Proveedor que provee este producto (solo lectura).',
+    sanitaryRegister: 'Número de registro sanitario si aplica al producto.',
+  };
+
   return (
     <div>
       <div style={{display:'grid',gridTemplateColumns:'1fr',gap:12}}>
         <div className="form-grid">
           <div className="field">
-            <label>Descripcion</label>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              Descripcion
+              <HelpTooltip text={helpTexts.description} ariaLabel="Ayuda Descripcion" />
+            </label>
             <input
               data-guide="description"
               data-ai-field="description"
@@ -31,7 +46,10 @@ const ProductFormSections: React.FC<Props> = ({ formState, errors, onChange }) =
           </div>
 
           <div className="field">
-            <label>U.M. de Venta</label>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              U.M. de Venta
+              <HelpTooltip text={helpTexts.unit} ariaLabel="Ayuda Unidad de Venta" />
+            </label>
             <select
               data-guide="unit"
               data-ai-field="unit"
@@ -49,7 +67,10 @@ const ProductFormSections: React.FC<Props> = ({ formState, errors, onChange }) =
           </div>
 
           <div className="field">
-            <label>Codigo interno proveedor</label>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              Codigo interno proveedor
+              <HelpTooltip text={helpTexts.internalCode} ariaLabel="Ayuda Código interno proveedor" />
+            </label>
             <input
               data-guide="internal-code"
               data-ai-field="internalCode"
@@ -61,7 +82,10 @@ const ProductFormSections: React.FC<Props> = ({ formState, errors, onChange }) =
           </div>
 
           <div className="field">
-            <label>Etiqueta</label>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              Etiqueta
+              <HelpTooltip text={helpTexts.label} ariaLabel="Ayuda Etiqueta" />
+            </label>
             <input
               data-guide="label"
               data-ai-field="label"
@@ -73,7 +97,10 @@ const ProductFormSections: React.FC<Props> = ({ formState, errors, onChange }) =
           </div>
 
           <div className="field">
-            <label>Codigo Barra</label>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              Codigo Barra
+              <HelpTooltip text={helpTexts.barcode} ariaLabel="Ayuda Código de Barras" />
+            </label>
             <input
               data-guide="barcode"
               data-ai-field="barcode"
@@ -85,7 +112,10 @@ const ProductFormSections: React.FC<Props> = ({ formState, errors, onChange }) =
           </div>
 
           <div className="field">
-            <label>Dimensiones</label>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              Dimensiones
+              <HelpTooltip text={helpTexts.dimensions} ariaLabel="Ayuda Dimensiones" />
+            </label>
             <input
               data-guide="dimensions"
               data-ai-field="dimensions"
@@ -98,12 +128,18 @@ const ProductFormSections: React.FC<Props> = ({ formState, errors, onChange }) =
           </div>
 
           <div className="field">
-            <label>Proveedor</label>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              Proveedor
+              <HelpTooltip text={helpTexts.supplierName} ariaLabel="Ayuda Proveedor" />
+            </label>
             <input data-ai-field="supplierName" name="supplierName" value="Proveedor demo" readOnly />
           </div>
 
           <div className="field">
-            <label>Sin Barra</label>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              Sin Barra
+              <HelpTooltip text="Marque esta casilla si el producto no tiene código de barras." ariaLabel="Ayuda Sin Barra" />
+            </label>
             <input type="checkbox" />
           </div>
         </div>
@@ -116,7 +152,10 @@ const ProductFormSections: React.FC<Props> = ({ formState, errors, onChange }) =
           {openSanitary && (
             <div className="body">
               <div className="field">
-                <label>Registro sanitario</label>
+                <label style={{display:'flex',alignItems:'center',gap:6}}>
+                  Registro sanitario
+                  <HelpTooltip text={helpTexts.sanitaryRegister} ariaLabel="Ayuda Registro sanitario" />
+                </label>
                 <input
                   data-guide="sanitary-register"
                   data-ai-field="sanitaryRegister"

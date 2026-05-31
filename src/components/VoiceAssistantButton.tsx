@@ -2,6 +2,7 @@ import React from 'react';
 import { useRealtimeVoiceAssistant } from '../hooks/useRealtimeVoiceAssistant';
 import { useSupportPanel } from '../features/support/SupportPanelContext';
 import '../styles/assistant.css';
+import ChatFallbackSupport from './ui/ChatFallbackSupport';
 
 const statusText = {
   idle: 'Listo para iniciar',
@@ -12,7 +13,7 @@ const statusText = {
 };
 
 const VoiceAssistantButton: React.FC = () => {
-  const { status, lastMessage, error, start, stop } = useRealtimeVoiceAssistant();
+  const { status, lastMessage, error, start, stop, isLoading, fallbackVisible } = useRealtimeVoiceAssistant();
   const { open: supportOpen } = useSupportPanel();
   const active = status !== 'idle' && status !== 'error';
 
@@ -27,6 +28,13 @@ const VoiceAssistantButton: React.FC = () => {
           <strong>{statusText[status]}</strong>
           {lastMessage && <span>{lastMessage}</span>}
           {error && <span className="voice-assistant-error">{error}</span>}
+        </div>
+      )}
+
+      {/* Fallback UI when connection fails */}
+      {(fallbackVisible || (!active && error)) && (
+        <div className="voice-assistant-panel">
+          <ChatFallbackSupport />
         </div>
       )}
       <button

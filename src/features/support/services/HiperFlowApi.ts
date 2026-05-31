@@ -57,4 +57,25 @@ export const HiperFlowApi = {
     const response = await requestJson<{ interactions: InteractionLog[] }>('/api/debug/interactions');
     return response.interactions;
   },
+
+  // Admin endpoints for dashboard (require admin role on server)
+  async getDashboardSummary(): Promise<any> {
+    return requestJson('/api/admin/dashboard/summary');
+  },
+
+  async getFrequentQuestions(): Promise<any[]> {
+    return requestJson('/api/admin/dashboard/frequent-questions');
+  },
+
+  async getRecentActivity(): Promise<any[]> {
+    return requestJson('/api/admin/dashboard/recent-activity');
+  },
+
+  async getAiInteractions(): Promise<any[]> {
+    return requestJson('/api/admin/dashboard/ai-interactions');
+  },
+
+  async getUsersActivity(): Promise<any[]> {
+    return requestJson('/api/admin/dashboard/users-activity');
+  },
 };

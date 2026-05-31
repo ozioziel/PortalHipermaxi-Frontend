@@ -1,5 +1,5 @@
 import React from 'react';
-import HelpTooltip from './HelpTooltip';
+import HelpTooltip from '../../../components/ui/HelpTooltip';
 
 interface Props {
   label: string;

@@ -112,3 +112,71 @@
     width: 100%;
   }
 }
+
+/* Fallback support card */
+.chat-fallback-card {
+  width: min(360px, calc(100vw - 48px));
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.chat-fallback-card h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.chat-fallback-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chat-fallback-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  text-decoration: none;
+  min-width: 72px;
+}
+
+.chat-fallback-action:hover {
+  background: #e2e8f0;
+}
+
+.chat-fallback-action.whatsapp {
+  background: #f57c00;
+  color: white;
+}
+
+.chat-fallback-action.whatsapp:hover {
+  background: #e66c00;
+}
+
+.chat-fallback-action.mail,
+.chat-fallback-action.phone {
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+}
+
+.chat-fallback-action.mail:hover,
+.chat-fallback-action.phone:hover {
+  background: #e2e8f0;
+}
+
+.chat-fallback-note {
+  color: #475569;
+  font-size: 13px;
+}

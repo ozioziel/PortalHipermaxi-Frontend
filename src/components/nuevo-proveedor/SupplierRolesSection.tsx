@@ -1,4 +1,5 @@
 import React from 'react';
+import HelpTooltip from '../ui/HelpTooltip';
 import type {
   SupplierRequestErrors,
   SupplierRequestField,
@@ -84,6 +85,18 @@ const buildInputStyle = (hasError: boolean): React.CSSProperties => ({
 const errorStyle: React.CSSProperties = {
   fontSize: 13,
   color: '#dc2626',
+};
+
+const helpTexts: Record<string, string> = {
+  systemsManagerName: 'Ingrese el nombre de la persona encargada de sistemas.',
+  systemsManagerEmail: 'Ingrese un correo válido del encargado de sistemas.',
+  systemsManagerPhone: 'Ingrese el teléfono de contacto del encargado de sistemas.',
+  hubManagerName: 'Ingrese el nombre de la persona responsable del HUB.',
+  hubManagerEmail: 'Ingrese el correo de la persona responsable del HUB.',
+  hubManagerPhone: 'Ingrese el teléfono del contacto HUB.',
+  salesManagerName: 'Ingrese el nombre del responsable comercial o de ventas.',
+  salesManagerEmail: 'Ingrese el correo del encargado comercial.',
+  salesManagerPhone: 'Ingrese el teléfono del encargado comercial.',
 };
 
 const contactGroups: ContactGroupConfig[] = [
@@ -193,8 +206,12 @@ export const SupplierRolesSection: React.FC<SupplierRolesSectionProps> = ({
                   style={fieldWrapperStyle}
                   data-tour={fieldConfig.tourAttribute}
                 >
-                  <label htmlFor={fieldConfig.field} style={labelStyle}>
+                  <label htmlFor={fieldConfig.field} style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {fieldConfig.label}
+                    <HelpTooltip
+                      text={helpTexts[fieldConfig.field] ?? 'Ingrese el valor correspondiente.'}
+                      ariaLabel={`Ayuda ${fieldConfig.label}`}
+                    />
                   </label>
                   <input
                     id={fieldConfig.field}
