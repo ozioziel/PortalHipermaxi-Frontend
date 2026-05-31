@@ -12,14 +12,14 @@ export const isValidPhone = (v: string) => /^[0-9]{7,12}$/.test(v);
 
 export function validateAccessForm(data: ProviderAccessFormData) {
   const errors: Record<string, string> = {};
-  if (!isRequired(data.providerName) || String(data.providerName).trim().length < 3) errors.providerName = 'Nombre del proveedor requerido (mín 3 caracteres)';
-  if (!isRequired(data.legalName) || String(data.legalName).trim().length < 3) errors.legalName = 'Razón social requerida (mín 3 caracteres)';
-  if (!isRequired(data.nit) || !isValidNit(data.nit)) errors.nit = 'NIT inválido (solo números, 5-15 dígitos)';
-  if (!isRequired(data.email) || !isValidEmail(data.email)) errors.email = 'Email inválido';
-  if (!isRequired(data.phone) || !isValidPhone(data.phone)) errors.phone = 'Teléfono inválido (7-12 dígitos)';
+  if (!isRequired(data.providerName) || String(data.providerName).trim().length < 3) errors.providerName = 'Nombre del proveedor requerido (min 3 caracteres)';
+  if (!isRequired(data.legalName) || String(data.legalName).trim().length < 3) errors.legalName = 'Razon social requerida (min 3 caracteres)';
+  if (!isRequired(data.nit) || !isValidNit(data.nit)) errors.nit = 'NIT invalido (solo numeros, 5-15 digitos)';
+  if (!isRequired(data.email) || !isValidEmail(data.email)) errors.email = 'Email invalido';
+  if (!isRequired(data.phone) || !isValidPhone(data.phone)) errors.phone = 'Telefono invalido (7-12 digitos)';
   if (!isRequired(data.commerceActivity)) errors.commerceActivity = 'Rubro comercial requerido';
   if (!isRequired(data.city)) errors.city = 'Ciudad requerida';
-  if (!isRequired(data.hasProviderCode)) errors.hasProviderCode = 'Seleccione una opción';
+  if (!isRequired(data.hasProviderCode)) errors.hasProviderCode = 'Seleccione una opcion';
   return errors;
 }
 
@@ -31,8 +31,8 @@ export function validateRegistrationForm(data: {
   const errors: string[] = [];
   data.contacts.forEach((contact) => {
     if (!isRequired(contact.name)) errors.push(`Falta nombre para ${contact.role}`);
-    if (!isRequired(contact.email) || !isValidEmail(contact.email)) errors.push(`Email inválido para ${contact.role}`);
-    if (!isRequired(contact.phone) || !isValidPhone(contact.phone)) errors.push(`Teléfono inválido para ${contact.role}`);
+    if (!isRequired(contact.email) || !isValidEmail(contact.email)) errors.push(`Email invalido para ${contact.role}`);
+    if (!isRequired(contact.phone) || !isValidPhone(contact.phone)) errors.push(`Telefono invalido para ${contact.role}`);
   });
 
   if (!data.confirmations || !Object.values(data.confirmations).every(Boolean)) errors.push('Debe aceptar todas las confirmaciones');

@@ -5,10 +5,10 @@ export interface ChatSource {
 }
 
 export interface ChatAction {
-  type: 'NAVIGATE_AND_GUIDE';
+  type: 'NAVIGATE';
   route: string;
-  guide: string;
   label: string;
+  openGuide: boolean;
 }
 
 export interface ChatResponse {

@@ -1,21 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sendChatMessage } from '../api/supportApi';
+import { runAssistantTurn } from '../agent/assistantAgent';
+import type { OpenAiMessage } from '../agent/assistantApi';
 import type { ChatMessage } from '../types/support.types';
 import './supportChat.css';
 
 const WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  text: 'Hola, soy el asistente del Portal de Proveedores. Puedo ayudarte a registrar un producto, resolver errores al guardar o responder dudas del portal. ¿En qué te ayudo?',
+  text: 'Hola, soy HiperBot 🤖 Puedo responder dudas del portal, llenarte campos del formulario, validarlo o llevarte a la sección que necesites. ¿En qué te ayudo?',
 };
 
 const uid = () => Math.random().toString(36).slice(2);
 
 const SUGGESTIONS = [
-  '¿Cómo solicito mis credenciales de acceso? Soy nuevo proveedor',
-  '¿Qué formato debe tener la imagen del producto?',
-  '¿Cómo registro un producto nuevo?',
+  '¿Cómo cargo una factura?',
+  'Llena la descripción con Aceite vegetal 1 litro',
+  'Llévame a la sección de facturas',
 ];
 
 export const SupportChatWidget: React.FC = () => {
@@ -25,6 +26,8 @@ export const SupportChatWidget: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  // OpenAI-format conversation kept in parallel to the displayed messages.
+  const convoRef = useRef<OpenAiMessage[]>([]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -34,27 +37,15 @@ export const SupportChatWidget: React.FC = () => {
     const text = (textArg ?? input).trim();
     if (!text || loading) return;
 
-    const userMsg: ChatMessage = { id: uid(), role: 'user', text };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, { id: uid(), role: 'user', text }]);
+    convoRef.current.push({ role: 'user', content: text });
     setInput('');
     setLoading(true);
 
     try {
-      const res = await sendChatMessage({
-        message: text,
-        page: window.location.pathname,
-      });
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uid(),
-          role: 'assistant',
-          text: res.answer,
-          sources: res.sources,
-          source: res.answer_source,
-          action: res.action,
-        },
-      ]);
+      const { history, reply } = await runAssistantTurn(convoRef.current, navigate);
+      convoRef.current = history;
+      setMessages((prev) => [...prev, { id: uid(), role: 'assistant', text: reply }]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -67,12 +58,6 @@ export const SupportChatWidget: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const goToAction = (route: string) => {
-    setOpen(false);
-    // The `?guide=1` flag tells the target page to auto-open its guide on mount.
-    navigate(`${route}?guide=1`);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -97,7 +82,7 @@ export const SupportChatWidget: React.FC = () => {
           <div className="support-header">
             <span className="support-dot" />
             <div>
-              <strong>Asistente de Proveedores</strong>
+              <strong>HiperBot · Asistente</strong>
               <small>Hipermaxi</small>
             </div>
           </div>
@@ -106,16 +91,6 @@ export const SupportChatWidget: React.FC = () => {
             {messages.map((m) => (
               <div key={m.id} className={`support-msg ${m.role}`}>
                 <div className="support-bubble">{m.text}</div>
-                {m.sources && m.sources.length > 0 && (
-                  <div className="support-sources">
-                    Fuentes: {m.sources.map((s) => s.id).filter(Boolean).join(', ')}
-                  </div>
-                )}
-                {m.action && (
-                  <button className="support-action" onClick={() => goToAction(m.action!.route)}>
-                    {m.action.label} →
-                  </button>
-                )}
               </div>
             ))}
             {loading && (
@@ -140,7 +115,7 @@ export const SupportChatWidget: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Escribe tu pregunta…"
+              placeholder="Escribe tu mensaje…"
               rows={1}
             />
             <button onClick={() => void send()} disabled={loading || !input.trim()}>

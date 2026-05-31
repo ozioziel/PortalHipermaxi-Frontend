@@ -15,7 +15,7 @@ export const FormField: React.FC<Props> = ({label, name, value, onChange, placeh
   return (
     <div className="field">
       <label>{label}{help && <HelpTooltip text={help} />}</label>
-      <input name={name} type={type} value={value ?? ''} placeholder={placeholder} onChange={(e)=>onChange && onChange(e.target.value)} />
+      <input data-ai-field={name} name={name} type={type} value={value ?? ''} placeholder={placeholder} onChange={(e)=>onChange && onChange(e.target.value)} />
     </div>
   );
 };

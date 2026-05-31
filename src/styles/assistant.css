@@ -1,0 +1,114 @@
+.voice-assistant-shell {
+  position: fixed;
+  right: 18px;
+  top: 92px;
+  z-index: 90;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.voice-assistant-button {
+  border: 0;
+  border-radius: 8px;
+  background: #075985;
+  color: white;
+  padding: 11px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+}
+
+.voice-assistant-button.active {
+  background: #b91c1c;
+}
+
+.voice-assistant-panel {
+  width: min(330px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.voice-assistant-panel.active {
+  border-color: #38bdf8;
+}
+
+.voice-assistant-panel span {
+  color: #475569;
+  line-height: 1.35;
+}
+
+.voice-assistant-error {
+  color: #b91c1c !important;
+}
+
+.assistant-dom-highlight {
+  outline: 3px solid #0284c7 !important;
+  box-shadow: 0 0 0 5px rgba(2, 132, 199, 0.2) !important;
+  border-radius: 6px;
+  transition: outline .18s ease, box-shadow .18s ease;
+}
+
+.assistant-dom-tooltip {
+  z-index: 220;
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: white;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.28);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.assistant-steps-panel {
+  position: fixed;
+  left: 18px;
+  top: 92px;
+  z-index: 210;
+  width: min(380px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  padding: 14px;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.22);
+}
+
+.assistant-steps-panel ol {
+  margin: 10px 0;
+  padding-left: 22px;
+}
+
+.assistant-steps-panel li {
+  margin: 7px 0;
+}
+
+.assistant-steps-panel button {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .voice-assistant-shell {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 12px;
+    justify-items: stretch;
+  }
+
+  .voice-assistant-panel {
+    width: 100%;
+  }
+}

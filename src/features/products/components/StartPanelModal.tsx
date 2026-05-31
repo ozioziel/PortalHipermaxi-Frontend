@@ -1,4 +1,5 @@
 import React from 'react';
+import {createPortal} from 'react-dom';
 import {useNavigate} from 'react-router-dom';
 import '../products.css';
 
@@ -24,7 +25,7 @@ const StartPanelModal: React.FC<Props> = ({onClose}) => {
     navigate('/avd');
   };
 
-  return (
+  return createPortal(
     <div className="overlay">
       <div className="modal" style={{maxWidth: 520}}>
         <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
@@ -62,7 +63,8 @@ const StartPanelModal: React.FC<Props> = ({onClose}) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

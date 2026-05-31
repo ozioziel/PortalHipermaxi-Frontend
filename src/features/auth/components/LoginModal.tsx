@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -82,7 +83,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div style={styles.overlay} onMouseDown={handleClose}>
       <div style={styles.modal} onMouseDown={e => e.stopPropagation()}>
         <h3 style={styles.title}>Iniciar sesión (prueba)</h3>
@@ -113,7 +114,8 @@ const LoginModal: React.FC<LoginModalProps> = ({
           <button style={styles.primaryBtn} onClick={handleEnter}>Entrar</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
