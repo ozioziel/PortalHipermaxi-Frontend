@@ -48,7 +48,7 @@ export const SupplierRequestSummary: React.FC<SupplierRequestSummaryProps> = ({ 
   ];
 
   return (
-    <section className="card">
+    <section className="card" data-tour="supplier-summary-section">
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ margin: 0, fontSize: 22 }}>Sección 6: Resumen de solicitud</h2>
         <p style={{ margin: '6px 0 0 0', color: 'var(--text-muted)' }}>

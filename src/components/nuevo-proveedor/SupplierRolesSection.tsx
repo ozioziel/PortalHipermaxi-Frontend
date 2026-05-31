@@ -20,6 +20,7 @@ interface ContactGroupConfig {
     label: string;
     placeholder: string;
     type?: string;
+    tourAttribute?: string;
   }>;
 }
 
@@ -113,24 +114,27 @@ const contactGroups: ContactGroupConfig[] = [
     title: 'Sección 3: Encargado HUB',
     description:
       'El Encargado HUB es el contacto autorizado para recibir las credenciales del Portal Web de Proveedores.',
-    guideAttribute: 'supplier-hub',
+    guideAttribute: 'supplier-hub-section',
     fields: [
       {
         field: 'hubManagerName',
         label: 'Nombre del Encargado HUB',
         placeholder: 'Ingrese el nombre del Encargado HUB',
+        tourAttribute: 'supplier-hub-name-input',
       },
       {
         field: 'hubManagerEmail',
         label: 'Email del Encargado HUB',
         placeholder: 'correo@empresa.com',
         type: 'email',
+        tourAttribute: 'supplier-hub-email-input',
       },
       {
         field: 'hubManagerPhone',
         label: 'Teléfono del Encargado HUB',
         placeholder: '+591 70000000',
         type: 'tel',
+        tourAttribute: 'supplier-hub-phone-input',
       },
     ],
   },
@@ -173,13 +177,22 @@ export const SupplierRolesSection: React.FC<SupplierRolesSectionProps> = ({
 
       <div style={groupsWrapperStyle}>
         {contactGroups.map((group) => (
-          <article key={group.title} style={groupCardStyle} data-guide={group.guideAttribute}>
+          <article
+            key={group.title}
+            style={groupCardStyle}
+            data-tour={group.guideAttribute}
+            data-guide={group.guideAttribute}
+          >
             <h3 style={{ margin: 0, fontSize: 18 }}>{group.title}</h3>
             <p style={helperTextStyle}>{group.description}</p>
 
             <div style={groupFieldsStyle}>
               {group.fields.map((fieldConfig) => (
-                <div key={fieldConfig.field} style={fieldWrapperStyle}>
+                <div
+                  key={fieldConfig.field}
+                  style={fieldWrapperStyle}
+                  data-tour={fieldConfig.tourAttribute}
+                >
                   <label htmlFor={fieldConfig.field} style={labelStyle}>
                     {fieldConfig.label}
                   </label>

@@ -38,6 +38,50 @@ const supportCardButtonStyle: React.CSSProperties = {
   color: '#1d4ed8',
 };
 
+const progressWrapperStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 14,
+  padding: '18px 20px',
+  borderRadius: 16,
+  border: '1px solid #e5e7eb',
+  background: '#ffffff',
+};
+
+const progressLineStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, 1fr)',
+  gap: 10,
+};
+
+const progressStepStyle = (active: boolean): React.CSSProperties => ({
+  padding: '12px 14px',
+  borderRadius: 999,
+  background: active ? '#1d4ed8' : '#f8fafc',
+  color: active ? '#ffffff' : '#475569',
+  fontSize: 13,
+  fontWeight: 700,
+  textAlign: 'center',
+});
+
+const sectionFooterStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 12,
+  flexWrap: 'wrap',
+  marginTop: 18,
+};
+
+const sectionButtonStyle: React.CSSProperties = {
+  minWidth: 140,
+};
+
+const secondaryButtonStyle: React.CSSProperties = {
+  background: '#ffffff',
+  border: '1px solid #d1d5db',
+  color: 'var(--text-dark)',
+};
+
 const actionRowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -52,17 +96,39 @@ const actionGroupStyle: React.CSSProperties = {
   flexWrap: 'wrap',
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #d1d5db',
-  color: 'var(--text-dark)',
+const createEmptyErrors = (): SupplierRequestErrors => ({});
+
+type SupplierFormSection = {
+  label: string;
+  tour: string;
+  component: (props: Record<string, unknown>) => JSX.Element;
 };
 
-const createEmptyErrors = (): SupplierRequestErrors => ({});
+const sectionDefinitions: SupplierFormSection[] = [
+  {
+    label: 'Datos generales',
+    tour: 'supplier-general-section',
+    component: (props) => <SupplierGeneralDataSection {...(props as any)} />,
+  },
+  {
+    label: 'Datos de contacto',
+    tour: 'supplier-contact-section',
+    component: (props) => <SupplierRolesSection {...(props as any)} />,
+  },
+  {
+    label: 'Documentos',
+    tour: 'supplier-documents-section',
+    component: (props) => <SupplierCatalogSection {...(props as any)} />,
+  },
+  {
+    label: 'Resumen',
+    tour: 'supplier-summary-section',
+    component: (props) => <SupplierRequestSummary formData={(props as any).formData} />,
+  },
+];
 
 export const SupplierRequestForm: React.FC = () => {
   const navigate = useNavigate();
-  const guide = useSupplierFormGuide();
   const [formData, setFormData] = useState<SupplierRequestFormData>(
     initialSupplierRequestFormData,
   );
@@ -70,6 +136,14 @@ export const SupplierRequestForm: React.FC = () => {
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedCaseNumber, setSubmittedCaseNumber] = useState('');
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+
+  const guide = useSupplierFormGuide({
+    activeSectionIndex: currentSectionIndex,
+    onSectionChange: setCurrentSectionIndex,
+  });
+
+  const currentSection = sectionDefinitions[currentSectionIndex];
 
   const handleFieldChange = (field: SupplierRequestField, value: string) => {
     setFormData((currentFormData) => {
@@ -88,6 +162,7 @@ export const SupplierRequestForm: React.FC = () => {
     setErrors(createEmptyErrors());
     setHasAttemptedSubmit(false);
     setIsSubmitting(false);
+    setCurrentSectionIndex(0);
   };
 
   const handleSubmit = () => {
@@ -106,6 +181,16 @@ export const SupplierRequestForm: React.FC = () => {
       setSubmittedCaseNumber('SR-000123');
       setIsSubmitting(false);
     }, 700);
+  };
+
+  const goToPreviousSection = () => {
+    setCurrentSectionIndex((previousIndex) => Math.max(previousIndex - 1, 0));
+  };
+
+  const goToNextSection = () => {
+    setCurrentSectionIndex((previousIndex) =>
+      Math.min(previousIndex + 1, sectionDefinitions.length - 1),
+    );
   };
 
   const handleResetAfterSuccess = () => {
@@ -138,6 +223,7 @@ export const SupplierRequestForm: React.FC = () => {
 
           <button
             className="btn btn-secondary"
+            data-tour="start-guide-button"
             onClick={guide.openGuide}
             style={supportCardButtonStyle}
           >
@@ -145,62 +231,55 @@ export const SupplierRequestForm: React.FC = () => {
           </button>
         </section>
 
-        <SupplierGeneralDataSection
-          formData={formData}
-          errors={errors}
-          onFieldChange={handleFieldChange}
-        />
+        <section className="card" data-tour="supplier-progress-bar" style={progressWrapperStyle}>
+          <div style={progressLineStyle}>
+            {sectionDefinitions.map((section, index) => (
+              <div key={section.tour} style={progressStepStyle(index === currentSectionIndex)}>
+                {section.label}
+              </div>
+            ))}
+          </div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            Paso {currentSectionIndex + 1} de {sectionDefinitions.length}
+          </div>
+        </section>
 
-        <SupplierRolesSection
-          formData={formData}
-          errors={errors}
-          onFieldChange={handleFieldChange}
-        />
+        <div style={{ display: 'grid', gap: 16 }} data-tour={currentSection.tour}>
+          {currentSection.component({ formData, errors, onFieldChange: handleFieldChange })}
 
-        <SupplierCatalogSection
-          formData={formData}
-          errors={errors}
-          onFieldChange={handleFieldChange}
-        />
+          <div style={sectionFooterStyle}>
+            <button
+              className="btn btn-secondary"
+              data-tour="back-button"
+              onClick={goToPreviousSection}
+              disabled={currentSectionIndex === 0}
+              style={sectionButtonStyle}
+            >
+              Anterior
+            </button>
 
-        <SupplierRequestSummary formData={formData} />
-
-        <section className="card">
-          <div style={actionRowStyle}>
-            <div>
-              <h2 style={{ margin: '0 0 6px 0', fontSize: 22 }}>Enviar solicitud</h2>
-              <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-                Verifique la información y envíe la solicitud para revisión del Área de
-                Compras.
-              </p>
-            </div>
-
-            <div style={actionGroupStyle}>
-              <button
-                className="btn btn-secondary"
-                style={secondaryButtonStyle}
-                onClick={() => navigate('/')}
-              >
-                Volver
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={secondaryButtonStyle}
-                onClick={handleClearForm}
-              >
-                Limpiar formulario
-              </button>
+            {currentSectionIndex < sectionDefinitions.length - 1 ? (
               <button
                 className="btn btn-primary"
-                data-guide="supplier-submit"
+                data-tour="next-button"
+                onClick={goToNextSection}
+                style={sectionButtonStyle}
+              >
+                Siguiente
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                data-tour="supplier-submit"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
+                style={sectionButtonStyle}
               >
                 {isSubmitting ? 'Enviando solicitud...' : 'Enviar solicitud'}
               </button>
-            </div>
+            )}
           </div>
-        </section>
+        </div>
       </div>
 
       <SupplierFormGuideOverlay

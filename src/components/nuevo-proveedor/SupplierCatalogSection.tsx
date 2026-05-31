@@ -58,7 +58,7 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
   onFieldChange,
 }) => {
   return (
-    <section className="card">
+    <section className="card" data-tour="supplier-documents-section">
       <div style={sectionHeaderStyle}>
         <h2 style={{ margin: 0, fontSize: 22 }}>Sección 5: Datos de catálogo</h2>
         <p style={{ margin: 0, color: 'var(--text-muted)' }}>
@@ -67,7 +67,7 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
       </div>
 
       <div style={fieldsGridStyle}>
-        <div style={fieldWrapperStyle} data-guide="supplier-code">
+        <div style={fieldWrapperStyle} data-tour="supplier-code-input">
           <label htmlFor="providerCode" style={labelStyle}>
             Código proveedor
           </label>
@@ -81,7 +81,7 @@ export const SupplierCatalogSection: React.FC<SupplierCatalogSectionProps> = ({
           {errors.providerCode ? <span style={errorStyle}>{errors.providerCode}</span> : null}
         </div>
 
-        <div style={fieldWrapperStyle} data-guide="supplier-region">
+        <div style={fieldWrapperStyle} data-tour="supplier-region-input">
           <label htmlFor="region" style={labelStyle}>
             Región
           </label>

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface SupplierFormGuideStep {
   id: string;
   selector: string;
   title: string;
   message: string;
+  sectionIndex: number;
 }
 
 export interface GuideHighlightRect {
@@ -14,42 +15,67 @@ export interface GuideHighlightRect {
   height: number;
 }
 
+export interface SupplierFormGuideOptions {
+  activeSectionIndex: number;
+  onSectionChange?: (sectionIndex: number) => void;
+}
+
 const supplierGuideSteps: SupplierFormGuideStep[] = [
   {
-    id: 'general-data',
-    selector: '[data-guide="supplier-general-data"]',
-    title: 'Datos del proveedor',
-    message: 'Primero complete los datos principales de la empresa proveedora.',
+    id: 'general-name',
+    selector: '[data-tour="supplier-name-input"]',
+    title: 'Datos generales',
+    message: 'Comience ingresando el nombre del proveedor.',
+    sectionIndex: 0,
   },
   {
-    id: 'nit',
-    selector: '[data-guide="supplier-nit"]',
+    id: 'general-nit',
+    selector: '[data-tour="supplier-nit-input"]',
     title: 'NIT',
     message: 'El NIT permite identificar legalmente a la empresa proveedora.',
+    sectionIndex: 0,
+  },
+  {
+    id: 'general-next',
+    selector: '[data-tour="next-button"]',
+    title: 'Avanzar sección',
+    message: 'Presione Siguiente para continuar a la sección de datos de contacto.',
+    sectionIndex: 0,
+  },
+  {
+    id: 'contact-section',
+    selector: '[data-tour="supplier-contact-section"]',
+    title: 'Datos de contacto',
+    message: 'Aquí encontrará los contactos principales del proveedor.',
+    sectionIndex: 1,
   },
   {
     id: 'hub-contact',
-    selector: '[data-guide="supplier-hub"]',
+    selector: '[data-tour="supplier-hub-name-input"]',
     title: 'Encargado HUB',
-    message: 'El Encargado HUB es el contacto autorizado para recibir las credenciales del portal.',
+    message: 'Ingrese el nombre del Encargado HUB, quien recibirá las credenciales.',
+    sectionIndex: 1,
   },
   {
-    id: 'provider-code',
-    selector: '[data-guide="supplier-code"]',
-    title: 'Codigo proveedor',
-    message: 'Ingrese el código proveedor relacionado con su empresa.',
+    id: 'documents-section',
+    selector: '[data-tour="supplier-documents-section"]',
+    title: 'Datos de catálogo',
+    message: 'Revise la información de catálogo antes de enviar la solicitud.',
+    sectionIndex: 2,
   },
   {
-    id: 'region',
-    selector: '[data-guide="supplier-region"]',
-    title: 'Region',
-    message: 'Seleccione la región correspondiente a la operación del proveedor.',
+    id: 'documents-code',
+    selector: '[data-tour="supplier-code-input"]',
+    title: 'Código proveedor',
+    message: 'Ingrese el código proveedor que vincula al proveedor con Hipermaxi.',
+    sectionIndex: 2,
   },
   {
     id: 'submit',
-    selector: '[data-guide="supplier-submit"]',
+    selector: '[data-tour="supplier-submit"]',
     title: 'Enviar solicitud',
     message: 'Cuando todos los datos estén completos, presione Enviar solicitud.',
+    sectionIndex: 3,
   },
 ];
 
@@ -86,7 +112,29 @@ const speakMessage = (message: string) => {
   window.speechSynthesis.speak(utterance);
 };
 
-export const useSupplierFormGuide = () => {
+const waitForElement = async (selector: string, timeout = 1400): Promise<HTMLElement | null> => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return null;
+  }
+
+  const deadline = performance.now() + timeout;
+
+  while (performance.now() < deadline) {
+    const targetElement = document.querySelector<HTMLElement>(selector);
+    if (targetElement && targetElement.offsetParent !== null) {
+      return targetElement;
+    }
+
+    await new Promise((resolve) => window.requestAnimationFrame(resolve));
+  }
+
+  return null;
+};
+
+export const useSupplierFormGuide = ({
+  activeSectionIndex,
+  onSectionChange,
+}: SupplierFormGuideOptions) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [highlightRect, setHighlightRect] = useState<GuideHighlightRect | null>(null);
@@ -94,24 +142,65 @@ export const useSupplierFormGuide = () => {
 
   const currentStep = supplierGuideSteps[currentStepIndex] ?? null;
 
+  const highlightElement = useCallback((selector: string) => {
+    const rect = buildHighlightRect(selector);
+    setHighlightRect(rect);
+  }, []);
+
+  const beforeStepChange = useCallback(
+    (step: SupplierFormGuideStep | null) => {
+      if (!step || typeof onSectionChange !== 'function') {
+        return;
+      }
+
+      if (step.sectionIndex !== activeSectionIndex) {
+        onSectionChange(step.sectionIndex);
+      }
+    },
+    [activeSectionIndex, onSectionChange],
+  );
+
   useEffect(() => {
     if (!isOpen || !currentStep) {
       return;
     }
 
-    const updateHighlight = () => {
-      setHighlightRect(buildHighlightRect(currentStep.selector));
+    let isCanceled = false;
+
+    const syncStep = async () => {
+      beforeStepChange(currentStep);
+      setHighlightRect(null);
+
+      const targetElement = await waitForElement(currentStep.selector);
+      if (isCanceled) {
+        return;
+      }
+
+      if (targetElement) {
+        highlightElement(currentStep.selector);
+      } else {
+        setHighlightRect(null);
+      }
     };
 
-    updateHighlight();
+    void syncStep();
+
+    const updateHighlight = () => {
+      if (!currentStep) {
+        return;
+      }
+      highlightElement(currentStep.selector);
+    };
+
     window.addEventListener('resize', updateHighlight);
     window.addEventListener('scroll', updateHighlight, true);
 
     return () => {
+      isCanceled = true;
       window.removeEventListener('resize', updateHighlight);
       window.removeEventListener('scroll', updateHighlight, true);
     };
-  }, [currentStep, isOpen]);
+  }, [activeSectionIndex, beforeStepChange, currentStep, highlightElement, isOpen]);
 
   useEffect(() => {
     if (!isOpen || !currentStep || !isVoiceEnabled || !hasSpeechSupport()) {
@@ -138,6 +227,9 @@ export const useSupplierFormGuide = () => {
   const openGuide = () => {
     setCurrentStepIndex(0);
     setIsOpen(true);
+    if (typeof onSectionChange === 'function') {
+      onSectionChange(0);
+    }
   };
 
   const closeGuide = () => {
@@ -149,14 +241,19 @@ export const useSupplierFormGuide = () => {
     }
   };
 
+  const goToStep = (stepIndex: number) => {
+    setCurrentStepIndex((previousStep) => {
+      const nextIndex = Math.min(Math.max(stepIndex, 0), supplierGuideSteps.length - 1);
+      return nextIndex;
+    });
+  };
+
   const goToPreviousStep = () => {
-    setCurrentStepIndex((previousStep) => Math.max(previousStep - 1, 0));
+    goToStep(currentStepIndex - 1);
   };
 
   const goToNextStep = () => {
-    setCurrentStepIndex((previousStep) =>
-      Math.min(previousStep + 1, supplierGuideSteps.length - 1),
-    );
+    goToStep(currentStepIndex + 1);
   };
 
   const repeatVoice = () => {
@@ -189,6 +286,10 @@ export const useSupplierFormGuide = () => {
     closeGuide,
     goToPreviousStep,
     goToNextStep,
+    goToStep,
+    beforeStepChange,
+    waitForElement,
+    highlightElement,
     repeatVoice,
     toggleVoice,
   };

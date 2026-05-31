@@ -16,11 +16,13 @@ const VoiceAssistantButton: React.FC = () => {
 
   return (
     <div className="voice-assistant-shell">
-      <div className={`voice-assistant-panel ${active ? 'active' : ''}`}>
-        <strong>{statusText[status]}</strong>
-        {lastMessage && <span>{lastMessage}</span>}
-        {error && <span className="voice-assistant-error">{error}</span>}
-      </div>
+      {active && (
+        <div className="voice-assistant-panel active">
+          <strong>{statusText[status]}</strong>
+          {lastMessage && <span>{lastMessage}</span>}
+          {error && <span className="voice-assistant-error">{error}</span>}
+        </div>
+      )}
       <button
         className={`voice-assistant-button ${active ? 'active' : ''}`}
         onClick={() => {

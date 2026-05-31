@@ -63,7 +63,7 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
     type = 'text',
     guideAttribute?: string,
   ) => (
-    <div style={fieldWrapperStyle} data-guide={guideAttribute}>
+    <div style={fieldWrapperStyle} data-guide={guideAttribute} data-tour={guideAttribute}>
       <label htmlFor={field} style={labelStyle}>
         {label}
       </label>
@@ -80,7 +80,7 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
   );
 
   return (
-    <section className="card" data-guide="supplier-general-data">
+    <section className="card" data-tour="supplier-general-section" data-guide="supplier-general-data">
       <div style={sectionHeaderStyle}>
         <h2 style={{ margin: 0, fontSize: 22 }}>Sección 1: Datos del proveedor</h2>
         <p style={{ margin: 0, color: 'var(--text-muted)' }}>
@@ -89,9 +89,21 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
       </div>
 
       <div style={fieldsGridStyle}>
-        {renderInput('Nombre de proveedor', 'providerName', 'Ingrese el nombre del proveedor')}
-        {renderInput('Razón social', 'legalName', 'Ingrese la razón social')}
-        {renderInput('NIT', 'nit', 'Ingrese el NIT', 'text', 'supplier-nit')}
+        {renderInput(
+          'Nombre de proveedor',
+          'providerName',
+          'Ingrese el nombre del proveedor',
+          'text',
+          'supplier-name-input',
+        )}
+        {renderInput(
+          'Razón social',
+          'legalName',
+          'Ingrese la razón social',
+          'text',
+          'supplier-legal-name-input',
+        )}
+        {renderInput('NIT', 'nit', 'Ingrese el NIT', 'text', 'supplier-nit-input')}
       </div>
     </section>
   );

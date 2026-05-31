@@ -12,20 +12,22 @@
 .support-toggle,
 .debug-toggle {
   border: 0;
-  border-radius: 8px;
-  background: #0f766e;
+  border-radius: 999px;
+  background: #0f69d5;
   color: white;
-  padding: 10px 14px;
+  padding: 8px 12px;
   font-weight: 700;
   cursor: pointer;
+  min-width: 120px;
+  letter-spacing: 0.02em;
 }
 
 .support-panel {
-  width: min(390px, calc(100vw - 32px));
+  width: min(360px, calc(100vw - 32px));
   background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.22);
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
   overflow: hidden;
 }
 
