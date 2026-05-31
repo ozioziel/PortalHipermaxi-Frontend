@@ -1,9 +1,10 @@
 @import '../../core/styles/variables.css';
 
 .invoice-system-bar {
-  background: var(--hiper-blue);
+  background: #ffffff;
+  border: 1px solid #d9d0c4;
   border-radius: 8px 8px 0 0;
-  color: var(--white);
+  color: #1f2937;
   overflow: hidden;
 }
 
@@ -12,11 +13,11 @@
   display: flex;
   gap: 12px;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 16px 18px;
 }
 
 .invoice-system-bar__top span {
-  color: rgba(255, 255, 255, 0.85);
+  color: #6b7280;
   display: block;
   font-size: 12px;
   margin-top: 4px;
@@ -29,7 +30,7 @@
 }
 
 .invoice-system-bar__indicator {
-  background: #2ea44f;
+  background: #e6f4e9;
   height: 4px;
 }
 
@@ -145,11 +146,16 @@
 
 .invoice-table-wrapper {
   overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 .invoice-orders-table,
 .invoice-files-table {
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   width: 100%;
 }
 
@@ -163,28 +169,44 @@
 
 .invoice-orders-table th,
 .invoice-files-table th {
-  background: #e5e7eb;
-  border: 1px solid #cfd4dc;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   color: #374151;
   font-size: 12px;
-  padding: 9px 8px;
+  padding: 14px 12px;
   text-align: left;
 }
 
 .invoice-orders-table td {
-  background: #f9c6ae;
-  border: 1px solid #efb08d;
-  color: #4b3429;
-  font-size: 12px;
-  padding: 9px 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #334155;
+  font-size: 13px;
+  padding: 14px 12px;
 }
 
 .invoice-orders-table tr:nth-child(even) td {
-  background: #f7bf9f;
+  background: #f8fafc;
 }
 
 .invoice-orders-table tr.is-selected td {
-  background: #ffe7d9;
+  background: #fffbeb;
+}
+
+.invoice-orders-table th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.invoice-orders-table th:last-child {
+  border-top-right-radius: 12px;
+}
+
+.invoice-orders-table tr:last-child td:first-child {
+  border-bottom-left-radius: 12px;
+}
+
+.invoice-orders-table tr:last-child td:last-child {
+  border-bottom-right-radius: 12px;
 }
 
 .invoice-orders-table .is-center {
@@ -199,14 +221,16 @@
 }
 
 .invoice-access-button {
-  background: #fff8f1;
-  border: 1px solid #8b5e3c;
-  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  height: 24px;
-  width: 44px;
+  min-height: 28px;
+  min-width: 52px;
+  padding: 6px 12px;
+  color: #334155;
 }
 
 .invoice-status-badge {

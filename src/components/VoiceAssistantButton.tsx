@@ -1,5 +1,6 @@
 import React from 'react';
 import { useRealtimeVoiceAssistant } from '../hooks/useRealtimeVoiceAssistant';
+import { useSupportPanel } from '../features/support/SupportPanelContext';
 import '../styles/assistant.css';
 
 const statusText = {
@@ -12,7 +13,12 @@ const statusText = {
 
 const VoiceAssistantButton: React.FC = () => {
   const { status, lastMessage, error, start, stop } = useRealtimeVoiceAssistant();
+  const { open: supportOpen } = useSupportPanel();
   const active = status !== 'idle' && status !== 'error';
+
+  if (supportOpen) {
+    return null;
+  }
 
   return (
     <div className="voice-assistant-shell">

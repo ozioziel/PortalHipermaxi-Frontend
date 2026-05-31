@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import MainLayout from '../../../core/components/layout/MainLayout';
 import '../products.css';
 import ProductToolbar from '../components/ProductToolbar';
@@ -12,17 +12,33 @@ import HiperFlowDebugPanel from '../../support/components/HiperFlowDebugPanel';
 import SupportAgentWidget from '../../support/components/SupportAgentWidget';
 import { buildCorrectionGuide, buildFullProductGuide } from '../../support/data/productGuideFields';
 import { HiperFlowApi } from '../../support/services/HiperFlowApi';
+import { useSupportPanel } from '../../support/SupportPanelContext';
 import type { GuideResponse, ProductFormState, SupportChatResponse, ValidationResult } from '../../support/types';
 
 const ProductListPage: React.FC = () => {
+  const { open: isSupportOpen, setOpen: setSupportOpen } = useSupportPanel();
   const [showNew, setShowNew] = useState(false);
   const [products, setProducts] = useState<Product[]>(() => ProductStorage.list());
+  const [query, setQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'products' | 'pending'>('products');
   const [formState, setFormState] = useState<ProductFormState>(initialProductFormState);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [guide, setGuide] = useState<GuideResponse | null>(null);
   const [guideActive, setGuideActive] = useState(false);
   const [lastQuestion, setLastQuestion] = useState('');
   const [lastResponse, setLastResponse] = useState<SupportChatResponse | null>(null);
+
+  const filteredProducts = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return products.filter((product) => {
+      if (!normalized) return true;
+      return [product.description, product.supplierBar, product.sanitaryRegistry].some((value) =>
+        value.toLowerCase().includes(normalized),
+      );
+    });
+  }, [products, query]);
+
+  const activeProducts = activeTab === 'products' ? filteredProducts : [];
 
   const updateFormState = (field: keyof ProductFormState, value: ProductFormState[keyof ProductFormState]) => {
     setFormState((current) => ({ ...current, [field]: value }));
@@ -99,28 +115,88 @@ const ProductListPage: React.FC = () => {
     }).catch(() => undefined);
   };
 
+  const handleDelete = (productId: number) => {
+    if (!window.confirm('¿Deseas eliminar este producto?')) {
+      return;
+    }
+
+    const nextProducts = products.filter((product) => product.id !== productId);
+    setProducts(nextProducts);
+    ProductStorage.delete(productId);
+  };
+
+  const exportToExcel = () => {
+    const rows = activeProducts.map((product) => ([
+      product.description,
+      product.supplierBar,
+      product.sanitaryRegistry,
+      product.sanitaryRegistryDate,
+    ]));
+
+    const csvRows = [
+      ['Producto', 'Barra Proveedor', 'Reg. Sanitario', 'Fecha Reg. San.'],
+      ...rows,
+    ]
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+
+    const blob = new Blob([csvRows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'productos.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <MainLayout>
-      <div className="system-bar">
-        <div className="inner container">
-          <div className="left"><strong>Portal Hipermaxi</strong></div>
-          <div className="right">
-            <button className="btn-small btn-white">Salir</button>
-            <button className="btn-small btn-white" onClick={() => void startGuide()}>Soporte y Ayuda</button>
+      <div style={{marginTop: 16}} className="products-container" data-ai-section="Lista de productos">
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16}}>
+          <div>
+            <div style={{fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#334155'}}>Productos</div>
+            <h2 style={{margin: '8px 0 0'}}>Lista de Productos</h2>
           </div>
         </div>
-        <div className="indicator" />
-      </div>
 
-      <div style={{marginTop:16}} className="products-container" data-ai-section="Lista de productos">
-        <h2>Lista de Productos</h2>
-        <ProductToolbar onNew={() => setShowNew(true)} />
-        <div style={{marginTop:8}} className="tabs">
-          <div className="tab">Productos</div>
-          <div className="tab">Por aprobar</div>
+        <ProductToolbar
+          query={query}
+          onChange={setQuery}
+          onNew={() => setShowNew(true)}
+          onClear={() => setQuery('')}
+          onExport={exportToExcel}
+          onFilterClick={() => setActiveTab('products')}
+        />
+
+        <div style={{marginTop: 8}} className="tabs">
+          <div
+            className={`tab${activeTab === 'products' ? ' active' : ''}`}
+            onClick={() => setActiveTab('products')}
+          >
+            Productos
+          </div>
+          <div
+            className={`tab${activeTab === 'pending' ? ' active' : ''}`}
+            onClick={() => setActiveTab('pending')}
+          >
+            Por aprobar
+          </div>
         </div>
 
-        <ProductTable products={products} />
+        {activeTab === 'pending' ? (
+          <div style={{padding: 20, background: '#f8fafc', borderRadius: 6, marginTop: 16, color: '#334155'}}>
+            <strong>No hay productos pendientes de aprobación.</strong>
+            <p style={{margin: '8px 0 0'}}>Navega a “Productos” para ver la lista completa.</p>
+          </div>
+        ) : activeProducts.length === 0 ? (
+          <div style={{padding: 20, background: '#f8fafc', borderRadius: 6, marginTop: 16, color: '#334155'}}>
+            No se encontraron productos para la búsqueda actual.
+          </div>
+        ) : (
+          <ProductTable products={activeProducts} onDelete={handleDelete} />
+        )}
       </div>
 
       {showNew && (
@@ -135,6 +211,8 @@ const ProductListPage: React.FC = () => {
       )}
 
       <SupportAgentWidget
+        isOpen={isSupportOpen}
+        onClose={() => setSupportOpen(false)}
         formState={formState}
         guideActive={guideActive}
         onStartGuide={() => void startGuide()}
@@ -146,11 +224,15 @@ const ProductListPage: React.FC = () => {
           setLastResponse(response);
         }}
       />
-      <HiperFlowDebugPanel
-        lastQuestion={lastQuestion}
-        lastResponse={lastResponse}
-        validationResult={validationResult}
-      />
+
+      {import.meta.env.DEV && (
+        <HiperFlowDebugPanel
+          lastQuestion={lastQuestion}
+          lastResponse={lastResponse}
+          validationResult={validationResult}
+        />
+      )}
+
       <GuideOverlay active={guideActive} guide={guide} onClose={() => setGuideActive(false)} />
     </MainLayout>
   );

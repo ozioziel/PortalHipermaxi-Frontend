@@ -17,10 +17,11 @@
 .btn-orange{background:var(--hiper-orange);color:white}
 .btn-white{background:white;border:1px solid var(--text-muted);color:var(--text-dark)}
 
-.search-input{padding:8px;border:1px solid #d1d5db;border-radius:6px;width:320px}
+.search-input{padding:8px;border:1px solid #d1d5db;border-radius:6px;width:320px;min-width:200px}
 
 .tabs{display:flex;gap:8px;margin:8px 0}
-.tab{padding:6px 10px;border-radius:6px;background:#f8fafc;border:1px solid #e6e6e6}
+.tab{padding:6px 10px;border-radius:6px;background:#f8fafc;border:1px solid #e6e6e6;cursor:pointer}
+.tab.active{background:#e0f2fe;border-color:#7dd3fc;color:#035388}
 
 .products-table{width:100%;border-collapse:collapse;background:white}
 .products-table th{background:var(--hiper-orange);color:white;padding:8px;font-weight:600;font-size:13px;border:1px solid #e5e7eb}

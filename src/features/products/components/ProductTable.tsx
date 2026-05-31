@@ -1,9 +1,12 @@
 import React from 'react';
 import type { Product } from '../types/product.types';
 
-interface Props { products: Product[] }
+interface Props {
+  products: Product[];
+  onDelete: (id: number) => void;
+}
 
-const ProductTable: React.FC<Props> = ({products}) => {
+const ProductTable: React.FC<Props> = ({ products, onDelete }) => {
   return (
     <div style={{overflowX:'auto',marginTop:12}}>
       <table className="products-table">
@@ -17,13 +20,17 @@ const ProductTable: React.FC<Props> = ({products}) => {
           </tr>
         </thead>
         <tbody>
-          {products.map(p => (
-            <tr key={p.id}>
-              <td>{p.description}</td>
-              <td>{p.supplierBar}</td>
-              <td>{p.sanitaryRegistry}</td>
-              <td>{p.sanitaryRegistryDate}</td>
-              <td className="options"><button>Eliminar</button></td>
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td>{product.description}</td>
+              <td>{product.supplierBar}</td>
+              <td>{product.sanitaryRegistry}</td>
+              <td>{product.sanitaryRegistryDate}</td>
+              <td className="options">
+                <button className="btn-small btn-white" onClick={() => onDelete(product.id)}>
+                  Eliminar
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

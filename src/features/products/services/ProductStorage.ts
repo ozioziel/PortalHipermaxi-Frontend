@@ -31,4 +31,11 @@ export const ProductStorage = {
     write(nextProducts);
     return nextProducts;
   },
+
+  delete(productId: number) {
+    const products = read();
+    const nextProducts = products.filter((product) => product.id !== productId);
+    write(nextProducts);
+    return nextProducts;
+  },
 };

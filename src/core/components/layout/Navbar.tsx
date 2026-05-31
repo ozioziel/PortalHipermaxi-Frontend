@@ -4,11 +4,13 @@ import AppLogo from '../ui/AppLogo';
 import {AppButton} from '../ui/AppButton';
 import LoginModal from '../../../features/auth/components/LoginModal';
 import StartPanelModal from '../../../features/products/components/StartPanelModal';
+import { useSupportPanel } from '../../../features/support/SupportPanelContext';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isStartPanelOpen, setIsStartPanelOpen] = useState(false);
+  const { setOpen: setSupportOpen } = useSupportPanel();
 
   return (
     <header style={{background:'white',padding:'12px 0',boxShadow:'0 1px 0 rgba(0,0,0,0.04)'}}>
@@ -20,7 +22,7 @@ export const Navbar: React.FC = () => {
           </Link>
         </div>
         <div style={{display:'flex',gap:8,alignItems:'center'}}>
-          <AppButton variant="secondary">Soporte y Ayudas</AppButton>
+          <AppButton variant="secondary" onClick={() => setSupportOpen(true)}>Soporte y Ayudas</AppButton>
           <AppButton
             variant="secondary"
             onClick={() => navigate('/nuevo-proveedor')}

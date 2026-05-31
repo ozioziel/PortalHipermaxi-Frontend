@@ -8,6 +8,8 @@ interface Message {
 }
 
 interface Props {
+  isOpen: boolean;
+  onClose: () => void;
   formState: ProductFormState;
   guideActive: boolean;
   onStartGuide: () => void;
@@ -16,25 +18,28 @@ interface Props {
 }
 
 const SupportAgentWidget: React.FC<Props> = ({
+  isOpen,
+  onClose,
   formState,
   guideActive,
   onStartGuide,
   onValidationRequested,
   onDebugUpdate,
 }) => {
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hola. Puedo validar el formulario, explicar campos o iniciar una guia paso a paso.',
+      content: 'Hola. Puedo validar el formulario, explicar campos o iniciar una guía paso a paso.',
     },
   ]);
 
   useEffect(() => {
-    if (guideActive) setOpen(false);
-  }, [guideActive]);
+    if (guideActive) {
+      onClose();
+    }
+  }, [guideActive, onClose]);
 
   const send = async () => {
     const question = text.trim();
@@ -68,39 +73,41 @@ const SupportAgentWidget: React.FC<Props> = ({
     }
   };
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <div className="support-widget">
-      <button className="support-toggle" onClick={() => setOpen((value) => !value)}>
-        {open ? 'Ocultar IA' : 'Ayuda con IA'}
-      </button>
-      {open && (
-        <section className="support-panel">
-          <div className="support-header">
-            <strong>SupportAgent</strong>
-            <button className="btn btn-white" onClick={onStartGuide}>Guia</button>
+    <div className="support-widget" style={{ position: 'fixed', right: 18, bottom: 18, zIndex: 90 }}>
+      <section className="support-panel">
+        <div className="support-header">
+          <strong>SupportAgent</strong>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-white" onClick={onStartGuide}>Guía</button>
+            <button className="btn btn-white btn-small" onClick={onClose}>Cerrar</button>
           </div>
-          <div className="support-messages">
-            {messages.map((message, index) => (
-              <div className={`support-message ${message.role}`} key={`${message.role}-${index}`}>
-                {message.content}
-              </div>
-            ))}
-          </div>
-          <div className="support-input-row">
-            <input
-              value={text}
-              placeholder="Ej: No puedo guardar mi producto"
-              onChange={(event) => setText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void send();
-              }}
-            />
-            <button className="btn btn-primary" disabled={loading} onClick={() => void send()}>
-              Enviar
-            </button>
-          </div>
-        </section>
-      )}
+        </div>
+        <div className="support-messages">
+          {messages.map((message, index) => (
+            <div className={`support-message ${message.role}`} key={`${message.role}-${index}`}>
+              {message.content}
+            </div>
+          ))}
+        </div>
+        <div className="support-input-row">
+          <input
+            value={text}
+            placeholder="Ej: No puedo guardar mi producto"
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') void send();
+            }}
+          />
+          <button className="btn btn-primary" disabled={loading} onClick={() => void send()}>
+            Enviar
+          </button>
+        </div>
+      </section>
     </div>
   );
 };
