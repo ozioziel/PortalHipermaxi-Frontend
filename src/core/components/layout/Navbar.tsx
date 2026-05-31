@@ -3,10 +3,12 @@ import {useNavigate, Link} from 'react-router-dom';
 import AppLogo from '../ui/AppLogo';
 import {AppButton} from '../ui/AppButton';
 import LoginModal from '../../../features/auth/components/LoginModal';
+import StartPanelModal from '../../../features/products/components/StartPanelModal';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isStartPanelOpen, setIsStartPanelOpen] = useState(false);
 
   return (
     <header style={{background:'white',padding:'12px 0',boxShadow:'0 1px 0 rgba(0,0,0,0.04)'}}>
@@ -21,13 +23,20 @@ export const Navbar: React.FC = () => {
           <AppButton variant="secondary">Soporte y Ayudas</AppButton>
           <AppButton
             variant="secondary"
-            onClick={() => navigate('/proveedor/acceso')}
+            onClick={() => navigate('/nuevo-proveedor')}
             style={{background: '#ffffff', border: '1px solid #f66014', color: '#f66014'}}
           >
             Soy nuevo
           </AppButton>
           <AppButton variant="primary" onClick={() => setIsLoginOpen(true)}>Iniciar</AppButton>
-          <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+          <LoginModal
+            isOpen={isLoginOpen}
+            onClose={() => setIsLoginOpen(false)}
+            onSuccess={() => setIsStartPanelOpen(true)}
+          />
+          {isStartPanelOpen ? (
+            <StartPanelModal onClose={() => setIsStartPanelOpen(false)} />
+          ) : null}
         </div>
       </div>
     </header>

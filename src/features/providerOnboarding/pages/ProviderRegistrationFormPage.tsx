@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import MainLayout from '../../../core/components/layout/MainLayout';
 import '../providerOnboarding.css';
@@ -24,12 +24,11 @@ const ProviderRegistrationFormPage: React.FC = () => {
   const [contacts, setContacts] = useState<ContactRole[]>(initialContactRoles);
   const [catalog, setCatalog] = useState<CatalogEntry[]>(initialCatalog);
   const [confirmations, setConfirmations] = useState<Record<string,boolean>>({c1:false,c2:false,c3:false});
-  const [errors, setErrors] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
-
-  useEffect(()=>{
-    setErrors(validateRegistrationForm({contacts,catalog,confirmations}));
-  },[contacts,catalog,confirmations]);
+  const errors = useMemo(
+    () => validateRegistrationForm({contacts, catalog, confirmations}),
+    [catalog, confirmations, contacts],
+  );
 
   const onChangeContact = (c:ContactRole,i:number)=>{
     const copy = [...contacts]; copy[i]=c; setContacts(copy);

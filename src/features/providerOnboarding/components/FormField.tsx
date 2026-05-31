@@ -4,8 +4,8 @@ import HelpTooltip from './HelpTooltip';
 interface Props {
   label: string;
   name?: string;
-  value?: any;
-  onChange?: (v:any)=>void;
+  value?: string | number;
+  onChange?: (value: string) => void;
   placeholder?: string;
   help?: string;
   type?: string;
@@ -15,7 +15,7 @@ export const FormField: React.FC<Props> = ({label, name, value, onChange, placeh
   return (
     <div className="field">
       <label>{label}{help && <HelpTooltip text={help} />}</label>
-      <input type={type} value={value ?? ''} placeholder={placeholder} onChange={(e)=>onChange && onChange(e.target.value)} />
+      <input name={name} type={type} value={value ?? ''} placeholder={placeholder} onChange={(e)=>onChange && onChange(e.target.value)} />
     </div>
   );
 };

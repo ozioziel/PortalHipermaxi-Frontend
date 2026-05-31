@@ -1,11 +1,11 @@
 import React from 'react';
-import {BrowserRouter, Routes, Route} from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import HomePage from '../../features/home/pages/HomePage';
-import ProductListPage from '../../features/products/pages/ProductListPage';
 import ProductCreatePage from '../../features/products/pages/ProductCreatePage';
-import ProviderAccessPage from '../../features/providerOnboarding/pages/ProviderAccessPage';
-import ProviderRegistrationFormPage from '../../features/providerOnboarding/pages/ProviderRegistrationFormPage';
-import ProviderSuccessPage from '../../features/providerOnboarding/pages/ProviderSuccessPage';
+import ProductListPage from '../../features/products/pages/ProductListPage';
+import AvdPage from '../../pages/avd/AvdPage';
+import FacturasPage from '../../pages/facturas/FacturasPage';
+import NuevoProveedorPage from '../../pages/nuevo-proveedor/NuevoProveedorPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -14,9 +14,12 @@ export const AppRoutes: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/productos" element={<ProductListPage />} />
         <Route path="/productos/nuevo" element={<ProductCreatePage />} />
-        <Route path="/proveedor/acceso" element={<ProviderAccessPage />} />
-        <Route path="/proveedor/registro" element={<ProviderRegistrationFormPage />} />
-        <Route path="/proveedor/exito" element={<ProviderSuccessPage />} />
+        <Route path="/facturas" element={<FacturasPage />} />
+        <Route path="/avd" element={<AvdPage />} />
+        <Route path="/nuevo-proveedor" element={<NuevoProveedorPage />} />
+        <Route path="/proveedor/acceso" element={<Navigate to="/nuevo-proveedor" replace />} />
+        <Route path="/proveedor/registro" element={<Navigate to="/nuevo-proveedor" replace />} />
+        <Route path="/proveedor/exito" element={<Navigate to="/nuevo-proveedor" replace />} />
       </Routes>
     </BrowserRouter>
   );

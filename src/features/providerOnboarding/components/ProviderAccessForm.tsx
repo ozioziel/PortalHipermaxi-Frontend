@@ -13,7 +13,10 @@ export const ProviderAccessForm: React.FC<Props> = ({initial}) => {
   const [errors, setErrors] = useState<Record<string,string>>({});
   const navigate = useNavigate();
 
-  const handleChange = (k: keyof ProviderAccessFormData, v:any) => setForm(prev=>({...prev,[k]:v}));
+  const handleChange = (
+    k: keyof ProviderAccessFormData,
+    v: ProviderAccessFormData[keyof ProviderAccessFormData],
+  ) => setForm(prev=>({...prev,[k]:v}));
 
   const handleSubmit = () =>{
     const errs = validateAccessForm(form);
@@ -70,7 +73,7 @@ export const ProviderAccessForm: React.FC<Props> = ({initial}) => {
 
           <div>
             <label>¿Ya tiene código proveedor? <button className="help-btn" onClick={(e)=>{e.preventDefault(); alert(providerHelpTexts.providerCode);}}>?</button></label>
-            <select value={form.hasProviderCode} onChange={e=>handleChange('hasProviderCode', e.target.value as any)}>
+            <select value={form.hasProviderCode} onChange={e=>handleChange('hasProviderCode', e.target.value as ProviderAccessFormData['hasProviderCode'])}>
               <option value="si">Sí</option>
               <option value="no">No</option>
               <option value="ns">No estoy seguro</option>

@@ -1,15 +1,12 @@
-import React, {useState} from 'react';
+import React from 'react';
 import ProductFormSections from './ProductFormSections';
 import '../products.css';
 
 interface Props { onClose: () => void }
 
 const ProductFormModal: React.FC<Props> = ({onClose}) => {
-  const [saved, setSaved] = useState(false);
-
   const handleSave = () => {
     console.log('Producto guardado visualmente');
-    setSaved(true);
     setTimeout(() => onClose(), 700);
   };
 

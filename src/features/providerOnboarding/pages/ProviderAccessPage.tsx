@@ -1,14 +1,13 @@
-import React, {useState} from 'react';
+import React from 'react';
 import MainLayout from '../../../core/components/layout/MainLayout';
 import ProviderAccessHero from '../components/ProviderAccessHero';
 import ProviderProcessSteps from '../components/ProviderProcessSteps';
 import ProviderAccessForm from '../components/ProviderAccessForm';
 import '../providerOnboarding.css';
 import type { ProviderAccessFormData } from '../types/providerOnboarding.types';
-import { validateAccessForm } from '../utils/providerValidators';
 
 const ProviderAccessPage: React.FC = () => {
-  const [formData, setFormData] = useState<ProviderAccessFormData | null>(null);
+  const formData: ProviderAccessFormData | null = null;
 
   return (
     <MainLayout>

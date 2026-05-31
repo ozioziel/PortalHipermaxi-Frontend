@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
 const styles = {
@@ -35,20 +35,29 @@ const styles = {
   linkBtn: { background: 'transparent', border: 'none', color: '#003f91', cursor: 'pointer', padding: 0, fontSize: 13 }
 };
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
-  const navigate = useNavigate();
+const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
   const [account, setAccount] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!isOpen) {
-      setAccount(''); setUsername(''); setPassword(''); setError('');
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
+
+  const resetForm = () => {
+    setAccount('');
+    setUsername('');
+    setPassword('');
+    setError('');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   const fillTest = () => {
     setAccount('cuenta@gmail.com');
@@ -65,15 +74,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
     const isValid = account.trim() === VALID_ACCOUNT && username.trim() === VALID_USERNAME && password === VALID_PASSWORD;
     if (isValid) {
+      resetForm();
       onClose();
-      navigate('/productos/nuevo');
+      onSuccess();
     } else {
       setError('Datos incorrectos. Usa las credenciales de prueba.');
     }
   };
 
   return (
-    <div style={styles.overlay} onMouseDown={onClose}>
+    <div style={styles.overlay} onMouseDown={handleClose}>
       <div style={styles.modal} onMouseDown={e => e.stopPropagation()}>
         <h3 style={styles.title}>Iniciar sesión (prueba)</h3>
         <p style={styles.subtitle}>Usa credenciales de prueba para acceder al flujo demo.</p>
@@ -99,7 +109,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div style={styles.actions}>
-          <button style={styles.cancelBtn} onClick={onClose}>Cancelar</button>
+          <button style={styles.cancelBtn} onClick={handleClose}>Cancelar</button>
           <button style={styles.primaryBtn} onClick={handleEnter}>Entrar</button>
         </div>
       </div>
