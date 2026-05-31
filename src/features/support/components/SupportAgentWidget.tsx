@@ -22,7 +22,7 @@ const SupportAgentWidget: React.FC<Props> = ({
   onValidationRequested,
   onDebugUpdate,
 }) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState('');
   const [messages, setMessages] = useState<Message[]>([
@@ -70,14 +70,21 @@ const SupportAgentWidget: React.FC<Props> = ({
 
   return (
     <div className="support-widget">
-      <button className="support-toggle" onClick={() => setOpen((value) => !value)}>
-        {open ? 'Cerrar ayuda' : 'Ayuda'}
+      <button
+        className="support-toggle"
+        onClick={() => setOpen((value) => !value)}
+        aria-label={open ? 'Cerrar ayuda' : 'Abrir ayuda con IA'}
+      >
+        {open ? 'Cerrar' : 'Ayuda con IA'}
       </button>
+
       {open && (
         <section className="support-panel">
           <div className="support-header">
             <strong>SupportAgent</strong>
-            <button className="btn btn-white" onClick={onStartGuide}>Guia</button>
+            <button className="btn btn-white" onClick={onStartGuide}>
+              Guia
+            </button>
           </div>
           <div className="support-messages">
             {messages.map((message, index) => (

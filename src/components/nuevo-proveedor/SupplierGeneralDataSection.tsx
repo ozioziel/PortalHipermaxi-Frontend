@@ -80,7 +80,7 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
   );
 
   return (
-    <section className="card" data-guide="supplier-general-data">
+    <section className="card" data-tour="supplier-general-section">
       <div style={sectionHeaderStyle}>
         <h2 style={{ margin: 0, fontSize: 22 }}>Sección 1: Datos del proveedor</h2>
         <p style={{ margin: 0, color: 'var(--text-muted)' }}>
@@ -91,7 +91,7 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
       <div style={fieldsGridStyle}>
         {renderInput('Nombre de proveedor', 'providerName', 'Ingrese el nombre del proveedor')}
         {renderInput('Razón social', 'legalName', 'Ingrese la razón social')}
-        {renderInput('NIT', 'nit', 'Ingrese el NIT', 'text', 'supplier-nit')}
+        {renderInput('NIT', 'nit', 'Ingrese el NIT', 'text', 'supplier-nit-input')}
       </div>
     </section>
   );

@@ -16,17 +16,21 @@ const VoiceAssistantButton: React.FC = () => {
 
   return (
     <div className="voice-assistant-shell">
-      <div className={`voice-assistant-panel ${active ? 'active' : ''}`}>
-        <strong>{statusText[status]}</strong>
-        {lastMessage && <span>{lastMessage}</span>}
-        {error && <span className="voice-assistant-error">{error}</span>}
-      </div>
+      {/* Panel only renders when active to avoid showing status messages on load */}
+      {active && (
+        <div className={`voice-assistant-panel ${active ? 'active' : ''}`}>
+          <strong>{statusText[status]}</strong>
+          {lastMessage && <span>{lastMessage}</span>}
+          {error && <span className="voice-assistant-error">{error}</span>}
+        </div>
+      )}
       <button
         className={`voice-assistant-button ${active ? 'active' : ''}`}
         onClick={() => {
           if (active) stop();
           else void start();
         }}
+        aria-label={active ? 'Detener IA' : 'Abrir asistente de voz'}
       >
         {active ? 'Detener IA' : 'Hablar con IA'}
       </button>
