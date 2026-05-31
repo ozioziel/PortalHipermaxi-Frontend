@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export interface SupplierFormGuideStep {
   id: string;
   selector: string;
+  sectionIndex: number;
   title: string;
   message: string;
-  sectionIndex: number;
 }
 
 export interface GuideHighlightRect {
@@ -16,66 +16,73 @@ export interface GuideHighlightRect {
 }
 
 export interface SupplierFormGuideOptions {
-  activeSectionIndex: number;
+  activeSectionIndex?: number;
   onSectionChange?: (sectionIndex: number) => void;
 }
 
 const supplierGuideSteps: SupplierFormGuideStep[] = [
   {
-    id: 'general-name',
-    selector: '[data-tour="supplier-name-input"]',
-    title: 'Datos generales',
-    message: 'Comience ingresando el nombre del proveedor.',
+    id: 'general-data',
+    selector: '[data-guide="supplier-general-data"]',
     sectionIndex: 0,
+    title: 'Datos del proveedor',
+    message: 'Primero complete los datos principales de la empresa proveedora.',
   },
   {
-    id: 'general-nit',
-    selector: '[data-tour="supplier-nit-input"]',
+    id: 'nit',
+    selector: '[data-guide="supplier-nit-input"], [data-tour="supplier-nit-input"]',
+    sectionIndex: 0,
     title: 'NIT',
     message: 'El NIT permite identificar legalmente a la empresa proveedora.',
-    sectionIndex: 0,
   },
   {
-    id: 'general-next',
-    selector: '[data-tour="next-button"]',
-    title: 'Avanzar sección',
-    message: 'Presione Siguiente para continuar a la sección de datos de contacto.',
-    sectionIndex: 0,
-  },
-  {
-    id: 'contact-section',
-    selector: '[data-tour="supplier-contact-section"]',
-    title: 'Datos de contacto',
-    message: 'Aquí encontrará los contactos principales del proveedor.',
+    id: 'systems-contact',
+    selector: '[data-guide="supplier-systems"]',
     sectionIndex: 1,
+    title: 'Encargado de Sistemas',
+    message: 'Registre el contacto tecnico que coordinara el acceso inicial.',
   },
   {
     id: 'hub-contact',
-    selector: '[data-tour="supplier-hub-name-input"]',
-    title: 'Encargado HUB',
-    message: 'Ingrese el nombre del Encargado HUB, quien recibirá las credenciales.',
+    selector: '[data-guide="supplier-hub"]',
     sectionIndex: 1,
+    title: 'Encargado HUB',
+    message: 'El Encargado HUB es el contacto autorizado para recibir las credenciales del portal.',
   },
   {
-    id: 'documents-section',
-    selector: '[data-tour="supplier-documents-section"]',
-    title: 'Datos de catálogo',
-    message: 'Revise la información de catálogo antes de enviar la solicitud.',
-    sectionIndex: 2,
+    id: 'sales-contact',
+    selector: '[data-guide="supplier-sales"]',
+    sectionIndex: 1,
+    title: 'Encargado Comercial',
+    message: 'Agregue el contacto comercial o de ventas para el seguimiento con Hipermaxi.',
   },
   {
-    id: 'documents-code',
-    selector: '[data-tour="supplier-code-input"]',
-    title: 'Código proveedor',
-    message: 'Ingrese el código proveedor que vincula al proveedor con Hipermaxi.',
+    id: 'provider-code',
+    selector: '[data-guide="supplier-code"]',
     sectionIndex: 2,
+    title: 'Codigo de proveedor',
+    message: 'Ingrese el codigo proveedor relacionado con su empresa.',
+  },
+  {
+    id: 'region',
+    selector: '[data-guide="supplier-region"]',
+    sectionIndex: 2,
+    title: 'Region',
+    message: 'Seleccione la region correspondiente a la operacion del proveedor.',
+  },
+  {
+    id: 'summary',
+    selector: '[data-guide="supplier-summary"], [data-tour="supplier-summary-section"]',
+    sectionIndex: 3,
+    title: 'Resumen',
+    message: 'Revise los datos principales antes de enviar la solicitud.',
   },
   {
     id: 'submit',
-    selector: '[data-tour="supplier-submit"]',
-    title: 'Enviar solicitud',
-    message: 'Cuando todos los datos estén completos, presione Enviar solicitud.',
+    selector: '[data-guide="supplier-submit"], [data-tour="supplier-submit"]',
     sectionIndex: 3,
+    title: 'Enviar solicitud',
+    message: 'Cuando todos los datos esten completos, presione Enviar solicitud.',
   },
 ];
 
@@ -89,15 +96,22 @@ const buildHighlightRect = (selector: string): GuideHighlightRect | null => {
     return null;
   }
 
-  targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-
   const rect = targetElement.getBoundingClientRect();
+
+  if (
+    rect.width === 0 ||
+    rect.height === 0 ||
+    rect.bottom < 0 ||
+    rect.top > window.innerHeight
+  ) {
+    return null;
+  }
 
   return {
     top: Math.max(rect.top - 8, 8),
     left: Math.max(rect.left - 8, 8),
-    width: rect.width + 16,
-    height: rect.height + 16,
+    width: Math.min(rect.width + 16, window.innerWidth - 16),
+    height: Math.min(rect.height + 16, window.innerHeight - 16),
   };
 };
 
@@ -112,7 +126,7 @@ const speakMessage = (message: string) => {
   window.speechSynthesis.speak(utterance);
 };
 
-const waitForElement = async (selector: string, timeout = 1400): Promise<HTMLElement | null> => {
+const waitForElement = async (selector: string, timeout = 1600): Promise<HTMLElement | null> => {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return null;
   }
@@ -132,19 +146,31 @@ const waitForElement = async (selector: string, timeout = 1400): Promise<HTMLEle
 };
 
 export const useSupplierFormGuide = ({
-  activeSectionIndex,
+  activeSectionIndex = 0,
   onSectionChange,
-}: SupplierFormGuideOptions) => {
+}: SupplierFormGuideOptions = {}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [highlightRect, setHighlightRect] = useState<GuideHighlightRect | null>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(() => hasSpeechSupport());
 
   const currentStep = supplierGuideSteps[currentStepIndex] ?? null;
+  const hasSpeech = useMemo(() => hasSpeechSupport(), []);
+
+  const moveToGuideStep = useCallback(
+    (nextStepIndex: number) => {
+      const boundedIndex = Math.min(Math.max(nextStepIndex, 0), supplierGuideSteps.length - 1);
+      const nextStep = supplierGuideSteps[boundedIndex];
+
+      setHighlightRect(null);
+      setCurrentStepIndex(boundedIndex);
+      onSectionChange?.(nextStep.sectionIndex);
+    },
+    [onSectionChange],
+  );
 
   const highlightElement = useCallback((selector: string) => {
-    const rect = buildHighlightRect(selector);
-    setHighlightRect(rect);
+    setHighlightRect(buildHighlightRect(selector));
   }, []);
 
   const beforeStepChange = useCallback(
@@ -177,7 +203,12 @@ export const useSupplierFormGuide = ({
       }
 
       if (targetElement) {
-        highlightElement(currentStep.selector);
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        window.setTimeout(() => {
+          if (!isCanceled) {
+            highlightElement(currentStep.selector);
+          }
+        }, 260);
       } else {
         setHighlightRect(null);
       }
@@ -186,9 +217,6 @@ export const useSupplierFormGuide = ({
     void syncStep();
 
     const updateHighlight = () => {
-      if (!currentStep) {
-        return;
-      }
       highlightElement(currentStep.selector);
     };
 
@@ -203,59 +231,56 @@ export const useSupplierFormGuide = ({
   }, [activeSectionIndex, beforeStepChange, currentStep, highlightElement, isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !currentStep || !isVoiceEnabled || !hasSpeechSupport()) {
+    if (!isOpen || !currentStep || !isVoiceEnabled || !hasSpeech) {
       return;
     }
 
     speakMessage(currentStep.message);
 
     return () => {
-      if (hasSpeechSupport()) {
+      if (hasSpeech) {
         window.speechSynthesis.cancel();
       }
     };
-  }, [currentStep, isOpen, isVoiceEnabled]);
+  }, [currentStep, hasSpeech, isOpen, isVoiceEnabled]);
 
   useEffect(() => {
     return () => {
-      if (hasSpeechSupport()) {
+      if (hasSpeech) {
         window.speechSynthesis.cancel();
       }
     };
-  }, []);
+  }, [hasSpeech]);
 
   const openGuide = () => {
-    setCurrentStepIndex(0);
+    moveToGuideStep(0);
     setIsOpen(true);
-    if (typeof onSectionChange === 'function') {
-      onSectionChange(0);
-    }
+    onSectionChange?.(0);
   };
 
   const closeGuide = () => {
     setIsOpen(false);
     setHighlightRect(null);
 
-    if (hasSpeechSupport()) {
+    if (hasSpeech) {
       window.speechSynthesis.cancel();
     }
   };
 
   const goToStep = (stepIndex: number) => {
-    const nextIndex = Math.min(Math.max(stepIndex, 0), supplierGuideSteps.length - 1);
-    setCurrentStepIndex(nextIndex);
+    moveToGuideStep(stepIndex);
   };
 
   const goToPreviousStep = () => {
-    goToStep(currentStepIndex - 1);
+    moveToGuideStep(currentStepIndex - 1);
   };
 
   const goToNextStep = () => {
-    goToStep(currentStepIndex + 1);
+    moveToGuideStep(currentStepIndex + 1);
   };
 
   const repeatVoice = () => {
-    if (!currentStep || !hasSpeechSupport()) {
+    if (!currentStep || !hasSpeech) {
       return;
     }
 
@@ -264,7 +289,7 @@ export const useSupplierFormGuide = ({
 
   const toggleVoice = () => {
     setIsVoiceEnabled((previousValue) => {
-      if (previousValue && hasSpeechSupport()) {
+      if (previousValue && hasSpeech) {
         window.speechSynthesis.cancel();
       }
 
@@ -279,7 +304,7 @@ export const useSupplierFormGuide = ({
     totalSteps: supplierGuideSteps.length,
     highlightRect,
     isVoiceEnabled,
-    hasSpeechSupport: hasSpeechSupport(),
+    hasSpeechSupport: hasSpeech,
     openGuide,
     closeGuide,
     goToPreviousStep,

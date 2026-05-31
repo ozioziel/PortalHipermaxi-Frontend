@@ -1,7 +1,15 @@
+import { mockProducts } from '../features/products/data/mockProducts';
+
 type AssistantActionResult = {
   ok: boolean;
   message?: string;
   data?: unknown;
+};
+
+type GuidedStep = {
+  title?: string;
+  message: string;
+  target?: string;
 };
 
 type UiElementSummary = {
@@ -19,6 +27,12 @@ type UiElementSummary = {
 const assistantUiClass = 'assistant-dom-highlight';
 const tooltipClass = 'assistant-dom-tooltip';
 const stepsClass = 'assistant-steps-panel';
+const guidedStepsClass = 'assistant-guided-steps';
+const guidedHighlightClass = 'assistant-guided-highlight';
+
+const dispatchAssistantGuideEvent = (type: 'start' | 'end') => {
+  window.dispatchEvent(new CustomEvent(`assistant-guided-steps:${type}`));
+};
 
 const normalize = (value: string) =>
   value
@@ -26,6 +40,27 @@ const normalize = (value: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+
+const productStorageKey = 'hiperflow.products.mock';
+
+const readProducts = () => {
+  try {
+    const raw = window.localStorage.getItem(productStorageKey);
+    return raw ? JSON.parse(raw) as typeof mockProducts : mockProducts;
+  } catch {
+    return mockProducts;
+  }
+};
+
+const summarizeProduct = (product: typeof mockProducts[number]) => ({
+  id: product.id,
+  name: product.description,
+  barcode: product.supplierBar,
+  sanitaryRegistry: product.sanitaryRegistry,
+  sanitaryRegistryDate: product.sanitaryRegistryDate,
+  price: product.price || null,
+  currency: product.price ? 'BOB' : null,
+});
 
 const compact = (value: string | null | undefined, maxLength = 120) => {
   const text = String(value || '').replace(/\s+/g, ' ').trim();
@@ -48,6 +83,7 @@ const getField = (fieldId: string): HTMLElement | null => {
     document.querySelector<HTMLElement>(`[data-ai-field="${safe}"]`) ||
     document.querySelector<HTMLElement>(`[data-ai-alias="${safe}"]`) ||
     document.querySelector<HTMLElement>(`[data-ai-action="${safe}"]`) ||
+    document.querySelector<HTMLElement>(`[data-guide="${safe}"]`) ||
     document.getElementById(fieldId) ||
     document.querySelector<HTMLElement>(`[name="${safe}"]`) ||
     findUiElement(fieldId).element
@@ -172,12 +208,31 @@ const showGlobalMessage = (message: string) => {
   window.setTimeout(() => tooltip.remove(), 5000);
 };
 
+const navigateTo = (path: string) => {
+  if (window.location.pathname === path) return;
+  window.history.pushState({}, '', path);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+};
+
+const delayedClick = (elementIdValue: string, delay = 450) => {
+  window.setTimeout(() => {
+    const element = getField(elementIdValue);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      highlight(element);
+      element.click();
+    }
+  }, delay);
+};
+
 const clearTooltips = () => {
   document.querySelectorAll(`.${tooltipClass}`).forEach((element) => element.remove());
 };
 
 const clearSteps = () => {
   document.querySelectorAll(`.${stepsClass}`).forEach((element) => element.remove());
+  document.querySelectorAll(`.${guidedStepsClass}`).forEach((element) => element.remove());
+  document.querySelectorAll(`.${guidedHighlightClass}`).forEach((element) => element.remove());
 };
 
 const highlight = (element: HTMLElement, timeout = 4500) => {
@@ -188,6 +243,7 @@ const highlight = (element: HTMLElement, timeout = 4500) => {
 export const clearAssistantUI = (): AssistantActionResult => {
   clearTooltips();
   clearSteps();
+  dispatchAssistantGuideEvent('end');
   document.querySelectorAll(`.${assistantUiClass}`).forEach((element) => {
     element.classList.remove(assistantUiClass);
   });
@@ -353,6 +409,240 @@ export const showSteps = (title: string, steps: string[]): AssistantActionResult
   return { ok: true, message: 'Pasos mostrados.' };
 };
 
+export const getProductsData = (limit = 20): AssistantActionResult => {
+  const products = readProducts().slice(0, Math.max(1, Math.min(limit, 50))).map(summarizeProduct);
+
+  return {
+    ok: true,
+    message: products.length
+      ? `Encontre ${products.length} productos disponibles.`
+      : 'No encontre productos registrados.',
+    data: {
+      products,
+      total: readProducts().length,
+      instruction: 'Responde con nombres legibles. Si el usuario pregunta precio, usa price y currency; si price es null, di que no esta registrado.',
+    },
+  };
+};
+
+export const findProductData = (query: string, limit = 5): AssistantActionResult => {
+  const normalizedQuery = normalize(query);
+  const products = readProducts();
+  const matches = products
+    .map((product) => {
+      const haystack = normalize([
+        product.description,
+        product.supplierBar,
+        product.sanitaryRegistry,
+        product.sanitaryRegistryDate,
+        product.price,
+      ].filter(Boolean).join(' '));
+      const exactName = normalize(product.description) === normalizedQuery ? 100 : 0;
+      const includes = haystack.includes(normalizedQuery) ? 45 : 0;
+      const tokenScore = normalizedQuery
+        .split(/\s+/)
+        .filter((token) => token.length > 2 && haystack.includes(token))
+        .length * 12;
+
+      return { product, score: exactName + includes + tokenScore };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(1, Math.min(limit, 20)))
+    .map((item) => ({ ...summarizeProduct(item.product), score: item.score }));
+
+  return {
+    ok: matches.length > 0,
+    message: matches.length
+      ? `Encontre ${matches.length} coincidencia(s).`
+      : `No encontre productos para: ${query}.`,
+    data: { query, products: matches },
+  };
+};
+
+export const getProductPrice = (query: string): AssistantActionResult => {
+  const result = findProductData(query, 3);
+  const products = (result.data as { products?: Array<{ name: string; price: string | null; currency: string | null }> } | undefined)?.products || [];
+  const product = products[0];
+
+  if (!product) {
+    return { ok: false, message: `No encontre el producto ${query}.`, data: { query } };
+  }
+
+  if (!product.price) {
+    return {
+      ok: true,
+      message: `El producto ${product.name} no tiene precio registrado.`,
+      data: { product, priceFound: false },
+    };
+  }
+
+  return {
+    ok: true,
+    message: `El precio de ${product.name} es ${product.price} ${product.currency}.`,
+    data: { product, priceFound: true },
+  };
+};
+
+const resolveGuidedTarget = (target?: string) => {
+  if (!target) return null;
+  const direct = getField(target);
+  if (direct) return direct;
+  return findUiElement(target, 'any').element;
+};
+
+const createGuidedHighlight = (target: HTMLElement | null) => {
+  document.querySelectorAll(`.${guidedHighlightClass}`).forEach((element) => element.remove());
+
+  if (!target) return;
+
+  const rect = target.getBoundingClientRect();
+  const highlight = document.createElement('div');
+  highlight.className = guidedHighlightClass;
+  highlight.style.position = 'fixed';
+  highlight.style.top = `${Math.max(rect.top - 8, 8)}px`;
+  highlight.style.left = `${Math.max(rect.left - 8, 8)}px`;
+  highlight.style.width = `${Math.max(rect.width + 16, 24)}px`;
+  highlight.style.height = `${Math.max(rect.height + 16, 24)}px`;
+  document.body.appendChild(highlight);
+};
+
+export const runGuidedSteps = (title: string, steps: GuidedStep[]): AssistantActionResult => {
+  const normalizedSteps = steps.filter((step) => step.message?.trim());
+
+  if (!normalizedSteps.length) {
+    return { ok: false, message: 'No hay pasos validos para ejecutar.' };
+  }
+
+  clearAssistantUI();
+  dispatchAssistantGuideEvent('start');
+
+  let currentIndex = 0;
+  const panel = document.createElement('aside');
+  panel.className = guidedStepsClass;
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
+
+  const render = () => {
+    const step = normalizedSteps[currentIndex];
+    const target = resolveGuidedTarget(step.target);
+
+    panel.innerHTML = '';
+
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      window.setTimeout(() => createGuidedHighlight(target), 260);
+    } else {
+      createGuidedHighlight(null);
+    }
+
+    const label = document.createElement('span');
+    label.className = 'assistant-guided-steps__label';
+    label.textContent = `Paso ${currentIndex + 1} de ${normalizedSteps.length}`;
+    panel.appendChild(label);
+
+    const heading = document.createElement('strong');
+    heading.textContent = step.title || title;
+    panel.appendChild(heading);
+
+    const message = document.createElement('p');
+    message.textContent = step.message;
+    panel.appendChild(message);
+
+    if (!target && step.target) {
+      const missing = document.createElement('small');
+      missing.textContent = 'No encontre el elemento exacto en esta pantalla, pero puedes continuar con el paso.';
+      panel.appendChild(missing);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'assistant-guided-steps__actions';
+
+    const previous = document.createElement('button');
+    previous.type = 'button';
+    previous.textContent = 'Anterior';
+    previous.disabled = currentIndex === 0;
+    previous.addEventListener('click', () => {
+      currentIndex = Math.max(currentIndex - 1, 0);
+      render();
+    });
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.textContent = currentIndex === normalizedSteps.length - 1 ? 'Finalizar' : 'Siguiente';
+    next.addEventListener('click', () => {
+      if (currentIndex >= normalizedSteps.length - 1) {
+        panel.remove();
+        createGuidedHighlight(null);
+        dispatchAssistantGuideEvent('end');
+        return;
+      }
+
+      currentIndex += 1;
+      render();
+    });
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.textContent = 'Salir';
+    close.addEventListener('click', () => {
+      panel.remove();
+      createGuidedHighlight(null);
+      dispatchAssistantGuideEvent('end');
+    });
+
+    actions.append(previous, next, close);
+    panel.appendChild(actions);
+  };
+
+  document.body.appendChild(panel);
+  render();
+
+  return {
+    ok: true,
+    message: 'Guia paso a paso iniciada. El asistente de voz se desactivo mientras la guia esta activa.',
+    data: { deactivateVoiceAssistant: true, steps: normalizedSteps.length },
+  };
+};
+
+export const startProductCreationGuide = (): AssistantActionResult => {
+  dispatchAssistantGuideEvent('start');
+  navigateTo('/productos');
+
+  window.setTimeout(() => {
+    const supportGuideButton =
+      getField('product-support-guide') ||
+      findUiElement('Soporte y Ayuda', 'button').element ||
+      findUiElement('guia crear nuevo producto', 'button').element;
+
+    if (supportGuideButton) {
+      supportGuideButton.click();
+    }
+  }, window.location.pathname === '/productos' ? 120 : 550);
+
+  return {
+    ok: true,
+    message: 'Estoy abriendo Productos y ejecutando Soporte y Ayuda para crear un nuevo producto.',
+    data: { deactivateVoiceAssistant: true, route: '/productos', guide: 'product_support_button' },
+  };
+};
+
+export const startNewOrderFlow = (): AssistantActionResult => {
+  navigateTo('/avd');
+  showGlobalMessage('Nuevo pedido: dime la descripcion del pedido para empezar.');
+
+  return {
+    ok: true,
+    message: 'Bueno, agreguemos un nuevo pedido. Que quieres poner de descripcion?',
+    data: {
+      route: '/avd',
+      flow: 'new_order',
+      nextPrompt: 'Bueno, agreguemos un nuevo pedido. Que quieres poner de descripcion?',
+      deactivateVoiceAssistant: false,
+    },
+  };
+};
+
 export const getFormState = (): AssistantActionResult => {
   const fields = getVisibleFields().map((element) => ({
     ...summarizeField(element),
@@ -447,16 +737,69 @@ export const autofillFromUserMessage = (message: string): AssistantActionResult 
 export const performTask = (task: string, value?: string): AssistantActionResult => {
   const normalizedTask = normalize(task);
 
+  if (
+    (normalizedTask.includes('nuevo') || normalizedTask.includes('agregar') || normalizedTask.includes('anad') || normalizedTask.includes('crear')) &&
+    normalizedTask.includes('pedido')
+  ) {
+    return startNewOrderFlow();
+  }
+
+  if (
+    (normalizedTask.includes('nuevo') || normalizedTask.includes('agregar') || normalizedTask.includes('crear')) &&
+    normalizedTask.includes('producto') &&
+    (normalizedTask.includes('guia') || normalizedTask.includes('guiada') || normalizedTask.includes('paso'))
+  ) {
+    return startProductCreationGuide();
+  }
+
+  if (
+    (normalizedTask.includes('nuevo') || normalizedTask.includes('agregar') || normalizedTask.includes('crear')) &&
+    normalizedTask.includes('producto')
+  ) {
+    navigateTo('/productos');
+    delayedClick('new-product', window.location.pathname === '/productos' ? 250 : 650);
+    return {
+      ok: true,
+      message: 'Estoy abriendo la seccion de productos y el formulario de nuevo producto.',
+      data: { route: '/productos', action: 'new-product' },
+    };
+  }
+
+  if (normalizedTask.includes('producto') && normalizedTask.includes('seccion')) {
+    navigateTo('/productos');
+    return { ok: true, message: 'Navegando a la seccion de productos.', data: { route: '/productos' } };
+  }
+
+  if (normalizedTask.includes('avd')) {
+    navigateTo('/avd');
+    return { ok: true, message: 'Navegando a la seccion AVD.', data: { route: '/avd' } };
+  }
+
   if (normalizedTask.includes('siguiente error') || normalizedTask.includes('error')) {
     return goToNextError();
   }
 
   if (normalizedTask.includes('pasos') || normalizedTask.includes('guia')) {
-    return showSteps('Pasos sugeridos', [
-      'Revisa los campos marcados como obligatorios.',
-      'Completa los datos faltantes.',
-      'Valida imagenes o documentos requeridos.',
-      'Presiona Guardar o Continuar cuando todo este completo.',
+    return runGuidedSteps('Pasos sugeridos', [
+      {
+        title: 'Revisar campos obligatorios',
+        message: 'Revisa los campos marcados como obligatorios o pendientes.',
+        target: 'formulario',
+      },
+      {
+        title: 'Completar datos faltantes',
+        message: 'Completa los datos faltantes antes de continuar.',
+      },
+      {
+        title: 'Validar adjuntos',
+        message: 'Si el proceso requiere imagenes o documentos, verifica que esten cargados.',
+        target: 'imagenes',
+      },
+      {
+        title: 'Guardar o continuar',
+        message: 'Cuando todo este completo, presiona Guardar o Continuar.',
+        target: 'guardar',
+      },
     ]);
   }
 
@@ -491,6 +834,29 @@ export const executeAssistantAction = async (actionName: string, args: Record<st
       return showTooltip(String(args.fieldId || ''), String(args.message || ''));
     case 'show_steps':
       return showSteps(String(args.title || 'Pasos'), Array.isArray(args.steps) ? args.steps.map(String) : []);
+    case 'run_guided_steps':
+      return runGuidedSteps(
+        String(args.title || 'Guia paso a paso'),
+        Array.isArray(args.steps) ? args.steps.map((step) => {
+          if (typeof step === 'string') return { message: step };
+          const value = step as Record<string, unknown>;
+          return {
+            title: value.title ? String(value.title) : undefined,
+            message: String(value.message || ''),
+            target: value.target ? String(value.target) : undefined,
+          };
+        }) : [],
+      );
+    case 'start_product_creation_guide':
+      return startProductCreationGuide();
+    case 'start_new_order_flow':
+      return startNewOrderFlow();
+    case 'data_get_products':
+      return getProductsData(Number(args.limit || 20));
+    case 'data_find_product':
+      return findProductData(String(args.query || ''), Number(args.limit || 5));
+    case 'data_get_product_price':
+      return getProductPrice(String(args.query || ''));
     case 'clear_assistant_ui':
       return clearAssistantUI();
     case 'get_form_state':

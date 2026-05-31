@@ -112,12 +112,17 @@ export const buildFullProductGuide = (serverGuide?: GuideResponse | null): Guide
 };
 
 export const buildCorrectionGuide = (validation: ValidationResult): GuideResponse => {
+  const fieldOrder = productGuideFields.map((field) => field.field);
   const groupedErrors = validation.errors.reduce<Record<string, ValidationIssue[]>>((accumulator, issue) => {
     accumulator[issue.field] = [...(accumulator[issue.field] ?? []), issue];
     return accumulator;
   }, {});
 
-  const correctionSteps = Object.entries(groupedErrors).map(([fieldName, issues], index) => {
+  const correctionEntries = Object.entries(groupedErrors).sort(
+    ([fieldA], [fieldB]) => fieldOrder.indexOf(fieldA as keyof ProductFormState) - fieldOrder.indexOf(fieldB as keyof ProductFormState),
+  );
+
+  const correctionSteps = correctionEntries.map(([fieldName, issues], index) => {
     const metadata = productGuideFields.find((field) => field.field === fieldName);
     const messages = issues.map((issue) => issue.message).join(' ');
     const reasons = issues.map((issue) => issue.reason).filter(Boolean).join(' ');

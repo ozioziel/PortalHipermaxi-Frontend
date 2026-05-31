@@ -35,16 +35,18 @@ const AvdGuideOverlay: React.FC<AvdGuideOverlayProps> = ({
   const viewportWidth = typeof window === 'undefined' ? 1280 : window.innerWidth;
   const viewportHeight = typeof window === 'undefined' ? 720 : window.innerHeight;
   const tooltipWidth = Math.min(360, viewportWidth - 32);
+  const tooltipMaxHeight = Math.max(280, viewportHeight - 32);
+  const estimatedTooltipHeight = Math.min(330, tooltipMaxHeight);
 
   const tooltipLeft = highlightRect
     ? Math.min(Math.max(16, highlightRect.left), viewportWidth - tooltipWidth - 16)
     : Math.max((viewportWidth - tooltipWidth) / 2, 16);
 
   const tooltipTop = highlightRect
-    ? highlightRect.bottom + 22 + 170 < viewportHeight
+    ? highlightRect.bottom + 18 + estimatedTooltipHeight < viewportHeight
       ? highlightRect.bottom + 22
-      : Math.max(16, highlightRect.top - 188)
-    : Math.max((viewportHeight - 220) / 2, 24);
+      : Math.max(16, Math.min(highlightRect.top - estimatedTooltipHeight - 18, viewportHeight - estimatedTooltipHeight - 16))
+    : Math.max((viewportHeight - estimatedTooltipHeight) / 2, 16);
 
   return (
     <div style={{position: 'fixed', inset: 0, zIndex: 1600, pointerEvents: 'none'}}>
@@ -78,9 +80,13 @@ const AvdGuideOverlay: React.FC<AvdGuideOverlayProps> = ({
           boxShadow: '0 25px 60px rgba(15, 23, 42, 0.35)',
           padding: 18,
           pointerEvents: 'auto',
+          maxHeight: tooltipMaxHeight,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <div style={{display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 10}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 10, flexShrink: 0}}>
           <div>
             <div style={{fontSize: 12, color: '#64748b'}}>Guia AVD</div>
             <strong>{`Paso ${currentStepIndex + 1} de ${totalSteps}`}</strong>
@@ -101,9 +107,11 @@ const AvdGuideOverlay: React.FC<AvdGuideOverlayProps> = ({
           </button>
         </div>
 
-        <p style={{margin: 0, color: '#334155', lineHeight: 1.5}}>{currentStep.message}</p>
+        <div style={{overflow: 'auto', paddingRight: 2}}>
+          <p style={{margin: 0, color: '#334155', lineHeight: 1.5}}>{currentStep.message}</p>
+        </div>
 
-        <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14, flexShrink: 0}}>
           <button
             type="button"
             onClick={onToggleVoice}
@@ -134,7 +142,7 @@ const AvdGuideOverlay: React.FC<AvdGuideOverlayProps> = ({
           </button>
         </div>
 
-        <div style={{display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 16}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 16, flexShrink: 0}}>
           <button
             type="button"
             onClick={onPrevious}

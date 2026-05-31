@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRealtimeVoiceAssistant } from '../hooks/useRealtimeVoiceAssistant';
 import { useSupportPanel } from '../features/support/SupportPanelContext';
 import '../styles/assistant.css';
@@ -13,11 +13,24 @@ const statusText = {
 };
 
 const VoiceAssistantButton: React.FC = () => {
-  const { status, lastMessage, error, start, stop, fallbackVisible } = useRealtimeVoiceAssistant();
+  const { status, error, start, stop, fallbackVisible } = useRealtimeVoiceAssistant();
   const { open: supportOpen } = useSupportPanel();
+  const [guidedStepsActive, setGuidedStepsActive] = useState(false);
   const active = status !== 'idle' && status !== 'error';
 
-  if (supportOpen) {
+  useEffect(() => {
+    const showGuidedMode = () => setGuidedStepsActive(true);
+    const hideGuidedMode = () => setGuidedStepsActive(false);
+
+    window.addEventListener('assistant-guided-steps:start', showGuidedMode);
+    window.addEventListener('assistant-guided-steps:end', hideGuidedMode);
+    return () => {
+      window.removeEventListener('assistant-guided-steps:start', showGuidedMode);
+      window.removeEventListener('assistant-guided-steps:end', hideGuidedMode);
+    };
+  }, []);
+
+  if (supportOpen || guidedStepsActive) {
     return null;
   }
 
@@ -26,8 +39,6 @@ const VoiceAssistantButton: React.FC = () => {
       {active && (
         <div className="voice-assistant-panel active">
           <strong>{statusText[status]}</strong>
-          {lastMessage && <span>{lastMessage}</span>}
-          {error && <span className="voice-assistant-error">{error}</span>}
         </div>
       )}
 

@@ -27,4 +27,5 @@ export const productFromForm = (formState: ProductFormState): Omit<Product, 'id'
   supplierBar: formState.barcode,
   sanitaryRegistry: formState.sanitaryRegister || 'No aplica',
   sanitaryRegistryDate: new Date().toISOString().slice(0, 10),
+  price: formState.price,
 });

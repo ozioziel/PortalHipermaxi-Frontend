@@ -55,32 +55,42 @@ const sectionButtonStyle: React.CSSProperties = {
 
 const createEmptyErrors = (): SupplierRequestErrors => ({});
 
+type SharedSectionProps = {
+  formData: SupplierRequestFormData;
+  errors: SupplierRequestErrors;
+  onFieldChange: (field: SupplierRequestField, value: string) => void;
+};
+
 type SupplierFormSection = {
   label: string;
   tour: string;
-  component: (props: Record<string, unknown>) => React.ReactElement;
+  component: (props: SharedSectionProps) => React.ReactElement;
 };
 
 const sectionDefinitions: SupplierFormSection[] = [
   {
     label: 'Datos generales',
     tour: 'supplier-general-section',
-    component: (props) => <SupplierGeneralDataSection {...(props as any)} />,
+    component: (props) => <SupplierGeneralDataSection {...props} />,
   },
   {
     label: 'Roles y contactos',
     tour: 'supplier-contact-section',
-    component: (props) => <SupplierRolesSection {...(props as any)} />,
+    component: (props) => <SupplierRolesSection {...props} />,
   },
   {
-    label: 'Catálogo',
+    label: 'Catalogo',
     tour: 'supplier-documents-section',
-    component: (props) => <SupplierCatalogSection {...(props as any)} />,
+    component: (props) => <SupplierCatalogSection {...props} />,
   },
   {
     label: 'Resumen',
     tour: 'supplier-summary-section',
-    component: (props) => <SupplierRequestSummary formData={(props as any).formData} />,
+    component: (props) => (
+      <div data-guide="supplier-summary">
+        <SupplierRequestSummary formData={props.formData} />
+      </div>
+    ),
   },
 ];
 
@@ -142,8 +152,8 @@ export const SupplierRequestForm: React.FC = () => {
   const validateSection = (sectionIndex: number) => {
     const validation = validateSupplierRequest(formData);
     const relevantFields = sectionFields[sectionIndex] || [];
-
     const sectionErrors: SupplierRequestErrors = {};
+
     relevantFields.forEach((field) => {
       if (validation[field]) {
         sectionErrors[field] = validation[field];
@@ -269,10 +279,10 @@ export const SupplierRequestForm: React.FC = () => {
 
         <section className="card" style={supportCardStyle}>
           <div>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: 20 }}>Guía visual del formulario</h2>
+            <h2 style={{ margin: '0 0 8px 0', fontSize: 20 }}>Guia visual del formulario</h2>
             <p style={supportCardTextStyle}>
-              Inicie una guía paso a paso para ubicar los campos clave y escuchar
-              indicaciones si la síntesis de voz está disponible.
+              Inicie una guia paso a paso para ubicar los campos clave y escuchar
+              indicaciones si la sintesis de voz esta disponible.
             </p>
           </div>
 
@@ -282,7 +292,7 @@ export const SupplierRequestForm: React.FC = () => {
             onClick={guide.openGuide}
             style={supportCardButtonStyle}
           >
-            Iniciar guía
+            Iniciar guia
           </button>
         </section>
 
@@ -324,6 +334,7 @@ export const SupplierRequestForm: React.FC = () => {
             ) : (
               <button
                 className="btn btn-primary"
+                data-guide="supplier-submit"
                 data-tour="supplier-submit"
                 onClick={handleSubmit}
                 disabled={isSubmitting}

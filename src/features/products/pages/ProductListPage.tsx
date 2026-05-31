@@ -30,9 +30,12 @@ const ProductListPage: React.FC = () => {
     const normalized = query.trim().toLowerCase();
     return products.filter((product) => {
       if (!normalized) return true;
-      return [product.description, product.supplierBar, product.sanitaryRegistry].some((value) =>
-        value.toLowerCase().includes(normalized),
-      );
+      return [
+        product.description,
+        product.supplierBar,
+        product.sanitaryRegistry,
+        product.price || '',
+      ].some((value) => value.toLowerCase().includes(normalized));
     });
   }, [products, query]);
 
@@ -51,7 +54,9 @@ const ProductListPage: React.FC = () => {
     const serverGuide = await HiperFlowApi.getProductGuide().catch(() => null);
     const productGuide = buildFullProductGuide(serverGuide);
     setGuide(productGuide);
-    setGuideActive(true);
+    window.setTimeout(() => {
+      setGuideActive(true);
+    }, 120);
 
     void HiperFlowApi.logInteraction({
       process: 'registro_producto',
@@ -119,25 +124,25 @@ const ProductListPage: React.FC = () => {
   };
 
   const handleDelete = (productId: number) => {
-    if (!window.confirm('¿Deseas eliminar este producto?')) {
+    if (!window.confirm('Deseas eliminar este producto?')) {
       return;
     }
 
-    const nextProducts = products.filter((product) => product.id !== productId);
+    const nextProducts = ProductStorage.delete(productId);
     setProducts(nextProducts);
-    ProductStorage.delete(productId);
   };
 
   const exportToExcel = () => {
     const rows = activeProducts.map((product) => ([
       product.description,
       product.supplierBar,
+      product.price || '',
       product.sanitaryRegistry,
       product.sanitaryRegistryDate,
     ]));
 
     const csvRows = [
-      ['Producto', 'Barra Proveedor', 'Reg. Sanitario', 'Fecha Reg. San.'],
+      ['Producto', 'Barra Proveedor', 'Precio', 'Reg. Sanitario', 'Fecha Reg. San.'],
       ...rows,
     ]
       .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(';'))
@@ -180,8 +185,13 @@ const ProductListPage: React.FC = () => {
             <h2 style={{ margin: '8px 0 0' }}>Lista de Productos</h2>
           </div>
 
-          <button className="btn btn-secondary" onClick={() => void startGuide()}>
-            Guía del registro
+          <button
+            className="btn btn-secondary"
+            data-ai-action="product-support-guide"
+            data-ai-alias="soporte ayuda guia guiame crear nuevo producto"
+            onClick={() => void startGuide()}
+          >
+            Soporte y Ayuda
           </button>
         </div>
 
@@ -213,14 +223,14 @@ const ProductListPage: React.FC = () => {
           <div
             style={{ padding: 20, background: '#f8fafc', borderRadius: 6, marginTop: 16, color: '#334155' }}
           >
-            <strong>No hay productos pendientes de aprobación.</strong>
-            <p style={{ margin: '8px 0 0' }}>Navega a “Productos” para ver la lista completa.</p>
+            <strong>No hay productos pendientes de aprobacion.</strong>
+            <p style={{ margin: '8px 0 0' }}>Navega a Productos para ver la lista completa.</p>
           </div>
         ) : activeProducts.length === 0 ? (
           <div
             style={{ padding: 20, background: '#f8fafc', borderRadius: 6, marginTop: 16, color: '#334155' }}
           >
-            No se encontraron productos para la búsqueda actual.
+            No se encontraron productos para la busqueda actual.
           </div>
         ) : (
           <ProductTable products={activeProducts} onDelete={handleDelete} />

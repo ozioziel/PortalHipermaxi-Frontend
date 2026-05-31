@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { GuideResponse } from '../types';
 import { HiperFlowApi } from '../services/HiperFlowApi';
 import { VoiceService } from '../services/VoiceService';
@@ -27,24 +28,37 @@ const GuideOverlay: React.FC<Props> = ({ active, guide, onClose }) => {
     if (!active) {
       setRect(null);
       VoiceService.cancel();
+      window.dispatchEvent(new CustomEvent('assistant-guided-steps:end'));
+      return;
     }
+
+    window.dispatchEvent(new CustomEvent('assistant-guided-steps:start'));
   }, [active]);
 
   useEffect(() => {
     if (!active || !step) return undefined;
 
     const updateRect = () => {
-      const element = document.querySelector(step.selector);
+      const element = document.querySelector<HTMLElement>(step.selector);
 
       if (!element) {
         setRect(null);
         return;
       }
 
-      element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      element.classList.add('guide-target-pulse');
       window.setTimeout(() => {
-        setRect(element.getBoundingClientRect());
-      }, 260);
+        const nextRect = element.getBoundingClientRect();
+        const visible =
+          nextRect.width > 0 &&
+          nextRect.height > 0 &&
+          nextRect.bottom > 0 &&
+          nextRect.right > 0 &&
+          nextRect.top < window.innerHeight &&
+          nextRect.left < window.innerWidth;
+        setRect(visible ? nextRect : null);
+      }, 420);
     };
 
     updateRect();
@@ -77,6 +91,7 @@ const GuideOverlay: React.FC<Props> = ({ active, guide, onClose }) => {
     }
 
     return () => {
+      document.querySelectorAll('.guide-target-pulse').forEach((element) => element.classList.remove('guide-target-pulse'));
       window.removeEventListener('resize', updateRect);
       window.removeEventListener('scroll', updateRect, true);
     };
@@ -90,10 +105,12 @@ const GuideOverlay: React.FC<Props> = ({ active, guide, onClose }) => {
   };
 
   const next = () => {
+    setRect(null);
     setIndex((current) => Math.min(current + 1, guide.steps.length - 1));
   };
 
   const back = () => {
+    setRect(null);
     setIndex((current) => Math.max(current - 1, 0));
   };
 
@@ -101,8 +118,8 @@ const GuideOverlay: React.FC<Props> = ({ active, guide, onClose }) => {
     VoiceService.speak(step.voice_text);
   };
 
-  return (
-    <div className="guide-overlay" role="dialog" aria-modal="true">
+  const overlay = (
+    <div className="support-guide-overlay" role="dialog" aria-modal="true">
       <GuideSpotlight rect={rect} />
       <GuideTooltip step={step} rect={rect} missingElement={missingElement}>
         <div className="guide-actions">
@@ -117,6 +134,8 @@ const GuideOverlay: React.FC<Props> = ({ active, guide, onClose }) => {
       </GuideTooltip>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 };
 
 export default GuideOverlay;

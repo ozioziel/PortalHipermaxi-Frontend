@@ -15,7 +15,7 @@ const GuideTooltip: React.FC<Props> = ({ step, rect, missingElement, children })
   const margin = 16;
   const gap = 16;
   const width = Math.min(360, window.innerWidth - margin * 2);
-  const estimatedHeight = 260;
+  const estimatedHeight = Math.min(320, window.innerHeight - margin * 2);
 
   const position = (() => {
     if (!rect) {
@@ -54,7 +54,7 @@ const GuideTooltip: React.FC<Props> = ({ step, rect, missingElement, children })
   })();
 
   return (
-    <div className="guide-tooltip" style={{ ...position, width }}>
+    <div className="support-guide-tooltip" style={{ ...position, width }}>
       <div className="guide-step-label">Paso {step.step}</div>
       <h3>{step.title}</h3>
       <p>{missingElement ? 'No encontre este elemento en la pantalla actual.' : step.message}</p>

@@ -21,6 +21,59 @@ interface SupplierFormGuideOverlayProps {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
+const buildTooltipPosition = (
+  highlightRect: GuideHighlightRect | null,
+  tooltipWidth: number,
+  tooltipHeight: number,
+  viewportWidth: number,
+  viewportHeight: number,
+) => {
+  if (!highlightRect) {
+    return {
+      left: clamp((viewportWidth - tooltipWidth) / 2, 16, viewportWidth - tooltipWidth - 16),
+      top: 56,
+    };
+  }
+
+  const hasRoomBelow = highlightRect.top + highlightRect.height + tooltipHeight + 20 <= viewportHeight;
+  const hasRoomAbove = highlightRect.top - tooltipHeight - 20 >= 16;
+  const besideRight = highlightRect.left + highlightRect.width + tooltipWidth + 20 <= viewportWidth;
+  const besideLeft = highlightRect.left - tooltipWidth - 20 >= 16;
+
+  if (hasRoomBelow) {
+    return {
+      left: clamp(highlightRect.left, 16, viewportWidth - tooltipWidth - 16),
+      top: highlightRect.top + highlightRect.height + 16,
+    };
+  }
+
+  if (besideRight) {
+    return {
+      left: highlightRect.left + highlightRect.width + 16,
+      top: clamp(highlightRect.top, 16, viewportHeight - tooltipHeight - 16),
+    };
+  }
+
+  if (besideLeft) {
+    return {
+      left: highlightRect.left - tooltipWidth - 16,
+      top: clamp(highlightRect.top, 16, viewportHeight - tooltipHeight - 16),
+    };
+  }
+
+  if (hasRoomAbove) {
+    return {
+      left: clamp(highlightRect.left, 16, viewportWidth - tooltipWidth - 16),
+      top: highlightRect.top - tooltipHeight - 16,
+    };
+  }
+
+  return {
+    left: clamp((viewportWidth - tooltipWidth) / 2, 16, viewportWidth - tooltipWidth - 16),
+    top: 16,
+  };
+};
+
 export const SupplierFormGuideOverlay: React.FC<SupplierFormGuideOverlayProps> = ({
   isOpen,
   currentStep,
@@ -41,17 +94,16 @@ export const SupplierFormGuideOverlay: React.FC<SupplierFormGuideOverlayProps> =
 
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-  const tooltipWidth = Math.min(360, viewportWidth - 32);
-
-  const tooltipLeft = highlightRect
-    ? clamp(highlightRect.left, 16, viewportWidth - tooltipWidth - 16)
-    : 16;
-
-  const tooltipTop = highlightRect
-    ? highlightRect.top + highlightRect.height + 16 <= viewportHeight - 230
-      ? highlightRect.top + highlightRect.height + 16
-      : Math.max(16, highlightRect.top - 214)
-    : 56;
+  const tooltipWidth = Math.min(380, viewportWidth - 32);
+  const tooltipMaxHeight = Math.max(260, viewportHeight - 32);
+  const estimatedTooltipHeight = Math.min(360, tooltipMaxHeight);
+  const tooltipPosition = buildTooltipPosition(
+    highlightRect,
+    tooltipWidth,
+    estimatedTooltipHeight,
+    viewportWidth,
+    viewportHeight,
+  );
 
   return (
     <div
@@ -60,15 +112,16 @@ export const SupplierFormGuideOverlay: React.FC<SupplierFormGuideOverlayProps> =
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 1000,
+        zIndex: 2300,
+        pointerEvents: 'none',
       }}
     >
       <div
-        onClick={onClose}
         style={{
-          position: 'absolute',
+          position: 'fixed',
           inset: 0,
-          background: 'rgba(15, 23, 42, 0.62)',
+          background: 'rgba(15, 23, 42, 0.64)',
+          pointerEvents: 'none',
         }}
       />
 
@@ -80,12 +133,12 @@ export const SupplierFormGuideOverlay: React.FC<SupplierFormGuideOverlayProps> =
             left: highlightRect.left,
             width: highlightRect.width,
             height: highlightRect.height,
-            borderRadius: 14,
-            border: '2px solid #f66014',
-            boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.52)',
-            background: 'transparent',
+            borderRadius: 12,
+            border: '3px solid #f66014',
+            boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.96), 0 0 28px rgba(246, 96, 20, 0.7)',
+            background: 'rgba(255, 255, 255, 0.04)',
             pointerEvents: 'none',
-            zIndex: 1001,
+            zIndex: 2301,
           }}
         />
       ) : null}
@@ -93,77 +146,79 @@ export const SupplierFormGuideOverlay: React.FC<SupplierFormGuideOverlayProps> =
       <aside
         style={{
           position: 'fixed',
-          top: tooltipTop,
-          left: tooltipLeft,
+          top: tooltipPosition.top,
+          left: tooltipPosition.left,
           width: tooltipWidth,
           maxWidth: 'calc(100vw - 32px)',
+          maxHeight: tooltipMaxHeight,
           background: '#ffffff',
-          borderRadius: 16,
-          padding: 20,
-          boxShadow: '0 18px 40px rgba(15, 23, 42, 0.24)',
-          zIndex: 1002,
+          borderRadius: 12,
+          boxShadow: '0 18px 42px rgba(15, 23, 42, 0.28)',
+          zIndex: 2302,
+          pointerEvents: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        <span
-          style={{
-            display: 'inline-flex',
-            padding: '6px 10px',
-            borderRadius: 999,
-            background: '#fff7ed',
-            color: 'var(--hiper-orange-dark)',
-            fontWeight: 700,
-            fontSize: 12,
-            marginBottom: 12,
-          }}
-        >
-          Paso {currentStepIndex + 1} de {totalSteps}
-        </span>
-
-        <h3 style={{ margin: '0 0 10px 0', fontSize: 22 }}>{currentStep.title}</h3>
-        <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          {currentStep.message}
-        </p>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: 10,
-            flexWrap: 'wrap',
-            marginTop: 18,
-          }}
-        >
-          <button
-            className="btn btn-secondary"
-            onClick={onRepeatVoice}
-            disabled={!hasSpeechSupport}
+        <div style={{ padding: 18, overflow: 'auto' }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              padding: '6px 10px',
+              borderRadius: 999,
+              background: '#fff7ed',
+              color: 'var(--hiper-orange-dark)',
+              fontWeight: 700,
+              fontSize: 12,
+              marginBottom: 12,
+            }}
           >
-            Repetir voz
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={onToggleVoice}
-            disabled={!hasSpeechSupport}
-          >
-            {isVoiceEnabled ? 'Desactivar voz' : 'Activar voz'}
-          </button>
+            Paso {currentStepIndex + 1} de {totalSteps}
+          </span>
+
+          <h3 style={{ margin: '0 0 10px 0', fontSize: 20 }}>{currentStep.title}</h3>
+          <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.55 }}>
+            {currentStep.message}
+          </p>
+
+          {!hasSpeechSupport ? (
+            <p style={{ margin: '12px 0 0 0', color: 'var(--text-muted)', fontSize: 13 }}>
+              La sintesis de voz no esta disponible en este navegador.
+            </p>
+          ) : null}
         </div>
 
-        {!hasSpeechSupport ? (
-          <p style={{ margin: '12px 0 0 0', color: 'var(--text-muted)', fontSize: 13 }}>
-            La síntesis de voz no está disponible en este navegador.
-          </p>
-        ) : null}
-
         <div
           style={{
+            borderTop: '1px solid #e5e7eb',
+            padding: 12,
             display: 'flex',
-            justifyContent: 'space-between',
-            gap: 12,
             flexWrap: 'wrap',
-            marginTop: 22,
+            justifyContent: 'space-between',
+            gap: 10,
+            background: '#ffffff',
+            flexShrink: 0,
           }}
         >
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={onRepeatVoice}
+              disabled={!hasSpeechSupport}
+            >
+              Repetir voz
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={onToggleVoice}
+              disabled={!hasSpeechSupport}
+            >
+              {isVoiceEnabled ? 'Sin voz' : 'Con voz'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               className="btn btn-secondary"
               onClick={onPrevious}
@@ -177,11 +232,10 @@ export const SupplierFormGuideOverlay: React.FC<SupplierFormGuideOverlayProps> =
             >
               {currentStepIndex === totalSteps - 1 ? 'Finalizar' : 'Siguiente'}
             </button>
+            <button className="btn btn-secondary" onClick={onClose}>
+              Salir
+            </button>
           </div>
-
-          <button className="btn btn-secondary" onClick={onClose}>
-            Salir
-          </button>
         </div>
       </aside>
     </div>

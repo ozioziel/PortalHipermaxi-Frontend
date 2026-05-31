@@ -98,7 +98,9 @@ export const useAvdGuide = (isConfirmed: boolean) => {
     }
 
     element.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'nearest'});
-    setHighlightRect(element.getBoundingClientRect());
+    window.setTimeout(() => {
+      setHighlightRect(element.getBoundingClientRect());
+    }, 220);
   }, [currentStep, isGuideOpen]);
 
   const startGuide = useCallback(() => {

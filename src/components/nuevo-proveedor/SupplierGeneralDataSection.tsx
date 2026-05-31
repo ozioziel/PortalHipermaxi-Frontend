@@ -17,7 +17,6 @@ const sectionHeaderStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
-  marginBottom: 20,
 };
 
 const fieldsGridStyle: React.CSSProperties = {
@@ -60,8 +59,8 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
 }) => {
   const helpTexts: Partial<Record<SupplierRequestField, string>> = {
     providerName: 'Ingrese el nombre legal de la empresa como aparece en sus documentos.',
-    legalName: 'Ingrese el nombre legal de la empresa como aparece en sus documentos.',
-    nit: 'Ingrese solo números, sin guiones ni espacios.',
+    legalName: 'Ingrese la razon social de la empresa como aparece en sus documentos.',
+    nit: 'Ingrese solo numeros, sin guiones ni espacios.',
   };
 
   const renderInput = (
@@ -78,7 +77,7 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
       >
         {label}
         <HelpTooltip
-          text={helpTexts[field] ?? 'Ingrese la información solicitada.'}
+          text={helpTexts[field] ?? 'Ingrese la informacion solicitada.'}
           ariaLabel={`Ayuda ${label}`}
         />
       </label>
@@ -96,8 +95,7 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
 
   React.useEffect(() => {
     const handler = (event: Event) => {
-      const custom = event as CustomEvent;
-      const detail = custom.detail as Partial<SupplierRequestFormData> | undefined;
+      const detail = (event as CustomEvent).detail as Partial<SupplierRequestFormData> | undefined;
       if (!detail) return;
 
       if (detail.providerName) onFieldChange('providerName', detail.providerName);
@@ -121,9 +119,9 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
         }}
       >
         <div style={sectionHeaderStyle}>
-          <h2 style={{ margin: 0, fontSize: 22 }}>Sección 1: Datos del proveedor</h2>
+          <h2 style={{ margin: 0, fontSize: 22 }}>Seccion 1: Datos del proveedor</h2>
           <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-            Registre la información principal de la empresa proveedora.
+            Registre la informacion principal de la empresa proveedora.
           </p>
         </div>
 
@@ -139,9 +137,9 @@ export const SupplierGeneralDataSection: React.FC<SupplierGeneralDataSectionProp
           'supplier-name-input',
         )}
         {renderInput(
-          'Razón social',
+          'Razon social',
           'legalName',
-          'Ingrese la razón social',
+          'Ingrese la razon social',
           'text',
           'supplier-legal-name-input',
         )}

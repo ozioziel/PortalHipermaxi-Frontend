@@ -103,6 +103,7 @@ const contactGroups: ContactGroupConfig[] = [
   {
     title: 'Sección 2: Encargado de Sistemas',
     description: 'Persona responsable de la coordinación técnica inicial.',
+    guideAttribute: 'supplier-systems',
     fields: [
       {
         field: 'systemsManagerName',
@@ -154,6 +155,7 @@ const contactGroups: ContactGroupConfig[] = [
   {
     title: 'Sección 4: Encargado Comercial / Ventas',
     description: 'Contacto comercial para seguimiento de la relación con Hipermaxi.',
+    guideAttribute: 'supplier-sales',
     fields: [
       {
         field: 'salesManagerName',
