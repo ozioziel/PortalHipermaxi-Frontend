@@ -25,6 +25,7 @@ type UiElementSummary = {
 };
 
 const assistantUiClass = 'assistant-dom-highlight';
+const assistantSpotlightClass = 'assistant-dom-spotlight';
 const tooltipClass = 'assistant-dom-tooltip';
 const stepsClass = 'assistant-steps-panel';
 const guidedStepsClass = 'assistant-guided-steps';
@@ -32,6 +33,20 @@ const guidedHighlightClass = 'assistant-guided-highlight';
 
 const dispatchAssistantGuideEvent = (type: 'start' | 'end') => {
   window.dispatchEvent(new CustomEvent(`assistant-guided-steps:${type}`));
+};
+
+const dispatchAssistantTargetEvent = (element: HTMLElement) => {
+  const rect = element.getBoundingClientRect();
+  window.dispatchEvent(new CustomEvent('assistant-ui-target', {
+    detail: {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      centerX: rect.left + rect.width / 2,
+      centerY: rect.top + rect.height / 2,
+    },
+  }));
 };
 
 const normalize = (value: string) =>
@@ -229,19 +244,41 @@ const clearTooltips = () => {
   document.querySelectorAll(`.${tooltipClass}`).forEach((element) => element.remove());
 };
 
+const clearSpotlights = () => {
+  document.querySelectorAll(`.${assistantSpotlightClass}`).forEach((element) => element.remove());
+};
+
 const clearSteps = () => {
   document.querySelectorAll(`.${stepsClass}`).forEach((element) => element.remove());
   document.querySelectorAll(`.${guidedStepsClass}`).forEach((element) => element.remove());
   document.querySelectorAll(`.${guidedHighlightClass}`).forEach((element) => element.remove());
 };
 
-const highlight = (element: HTMLElement, timeout = 4500) => {
+const createSpotlight = (element: HTMLElement, timeout: number) => {
+  clearSpotlights();
+  const rect = element.getBoundingClientRect();
+  const padding = 8;
+  const spotlight = document.createElement('div');
+  spotlight.className = assistantSpotlightClass;
+  spotlight.style.position = 'fixed';
+  spotlight.style.top = `${Math.max(rect.top - padding, 8)}px`;
+  spotlight.style.left = `${Math.max(rect.left - padding, 8)}px`;
+  spotlight.style.width = `${Math.min(rect.width + padding * 2, window.innerWidth - 16)}px`;
+  spotlight.style.height = `${Math.min(rect.height + padding * 2, window.innerHeight - 16)}px`;
+  document.body.appendChild(spotlight);
+  window.setTimeout(() => spotlight.remove(), timeout);
+};
+
+const highlight = (element: HTMLElement, timeout = 7000) => {
+  dispatchAssistantTargetEvent(element);
+  createSpotlight(element, timeout);
   element.classList.add(assistantUiClass);
   window.setTimeout(() => element.classList.remove(assistantUiClass), timeout);
 };
 
 export const clearAssistantUI = (): AssistantActionResult => {
   clearTooltips();
+  clearSpotlights();
   clearSteps();
   dispatchAssistantGuideEvent('end');
   document.querySelectorAll(`.${assistantUiClass}`).forEach((element) => {
@@ -304,14 +341,48 @@ export const showTooltip = (fieldId: string, message: string): AssistantActionRe
 
   clearTooltips();
   const rect = element.getBoundingClientRect();
+  dispatchAssistantTargetEvent(element);
+
+  const tooltipWidth = Math.min(320, window.innerWidth - 32);
+  const estimatedTooltipHeight = 110;
+  const gap = 14;
+  const leftNearTarget = Math.min(Math.max(rect.left, 16), window.innerWidth - tooltipWidth - 16);
+  const positions = [
+    {
+      left: leftNearTarget,
+      top: rect.bottom + gap,
+      fits: rect.bottom + gap + estimatedTooltipHeight <= window.innerHeight - 16,
+    },
+    {
+      left: leftNearTarget,
+      top: rect.top - estimatedTooltipHeight - gap,
+      fits: rect.top - estimatedTooltipHeight - gap >= 16,
+    },
+    {
+      left: rect.left - tooltipWidth - gap,
+      top: Math.min(Math.max(rect.top, 16), window.innerHeight - estimatedTooltipHeight - 16),
+      fits: rect.left - tooltipWidth - gap >= 16,
+    },
+    {
+      left: rect.right + gap,
+      top: Math.min(Math.max(rect.top, 16), window.innerHeight - estimatedTooltipHeight - 16),
+      fits: rect.right + tooltipWidth + gap <= window.innerWidth - 16,
+    },
+  ];
+  const position = positions.find((candidate) => candidate.fits) || {
+    left: rect.left + rect.width / 2 > window.innerWidth / 2 ? 16 : window.innerWidth - tooltipWidth - 16,
+    top: 16,
+  };
+
   const tooltip = document.createElement('div');
   tooltip.className = tooltipClass;
   tooltip.textContent = message;
   tooltip.style.position = 'fixed';
-  tooltip.style.left = `${Math.min(Math.max(rect.left, 16), window.innerWidth - 320)}px`;
-  tooltip.style.top = `${Math.min(rect.bottom + 10, window.innerHeight - 90)}px`;
+  tooltip.style.left = `${position.left}px`;
+  tooltip.style.top = `${position.top}px`;
+  tooltip.style.width = `${tooltipWidth}px`;
   document.body.appendChild(tooltip);
-  window.setTimeout(() => tooltip.remove(), 6500);
+  window.setTimeout(() => tooltip.remove(), 7000);
   return { ok: true, message: 'Tooltip mostrado.' };
 };
 

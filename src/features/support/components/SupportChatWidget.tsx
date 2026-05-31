@@ -9,7 +9,7 @@ import './supportChat.css';
 const WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  text: 'Hola, soy HiperBot 🤖 Puedo responder dudas del portal, llenarte campos del formulario, validarlo o llevarte a la sección que necesites. ¿En qué te ayudo?',
+  text: 'Hola, soy Maxi. Puedo responder dudas del portal, llenar campos del formulario, validarlo o llevarte a la sección que necesites. ¿En qué te ayudo?',
 };
 
 const uid = () => Math.random().toString(36).slice(2);
@@ -26,9 +26,35 @@ export const SupportChatWidget: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dockSide, setDockSide] = useState<'left' | 'right'>('right');
   const listRef = useRef<HTMLDivElement>(null);
+  const dockResetRef = useRef<number | null>(null);
   // OpenAI-format conversation kept in parallel to the displayed messages.
   const convoRef = useRef<OpenAiMessage[]>([]);
+
+  useEffect(() => {
+    const onAssistantTarget = (event: Event) => {
+      const detail = (event as CustomEvent<{ centerX?: number }>).detail;
+      const targetCenter = detail?.centerX ?? window.innerWidth;
+      setDockSide(targetCenter > window.innerWidth / 2 ? 'left' : 'right');
+
+      if (dockResetRef.current) {
+        window.clearTimeout(dockResetRef.current);
+      }
+
+      dockResetRef.current = window.setTimeout(() => {
+        setDockSide('right');
+      }, 7600);
+    };
+
+    window.addEventListener('assistant-ui-target', onAssistantTarget);
+    return () => {
+      window.removeEventListener('assistant-ui-target', onAssistantTarget);
+      if (dockResetRef.current) {
+        window.clearTimeout(dockResetRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -71,19 +97,19 @@ export const SupportChatWidget: React.FC = () => {
   return (
     <>
       <button
-        className="support-fab"
+        className={`support-fab support-fab--${dockSide}`}
         aria-label={open ? 'Cerrar asistente' : 'Abrir asistente'}
         onClick={() => setOpen((o) => !o)}
       >
-        {open ? '✕' : '💬'}
+        {open ? '×' : 'IA'}
       </button>
 
       {open && (
-        <div className="support-panel" role="dialog" aria-label="Asistente de soporte">
+        <div className={`support-panel support-panel--${dockSide}`} role="dialog" aria-label="Asistente de soporte">
           <div className="support-header">
             <span className="support-dot" />
             <div>
-              <strong>HiperBot · Asistente</strong>
+              <strong>Maxi · Asistente</strong>
               <small>Hipermaxi</small>
             </div>
           </div>
@@ -96,7 +122,7 @@ export const SupportChatWidget: React.FC = () => {
             ))}
             {loading && (
               <div className="support-msg assistant">
-                <div className="support-bubble support-typing">Escribiendo…</div>
+                <div className="support-bubble support-typing">Escribiendo...</div>
               </div>
             )}
 
@@ -116,7 +142,7 @@ export const SupportChatWidget: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Escribe tu mensaje…"
+              placeholder="Escribe tu mensaje..."
               rows={1}
             />
             <button onClick={() => void send()} disabled={loading || !input.trim()}>
