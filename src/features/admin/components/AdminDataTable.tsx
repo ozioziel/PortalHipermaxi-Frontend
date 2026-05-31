@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -53,11 +53,9 @@ export function AdminDataTable<T>({
   const currentPage = Math.min(page, totalPages);
   const visibleRows = sortedRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  useEffect(() => {
-    setPage(1);
-  }, [rows.length, sortColumnId, sortDirection]);
-
   const handleSort = (columnId: string) => {
+    setPage(1);
+
     if (sortColumnId === columnId) {
       setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
       return;
@@ -65,6 +63,11 @@ export function AdminDataTable<T>({
 
     setSortColumnId(columnId);
     setSortDirection('desc');
+  };
+
+  const getSortIndicator = (columnId: string) => {
+    if (sortColumnId !== columnId) return '↕';
+    return sortDirection === 'asc' ? '↑' : '↓';
   };
 
   return (
@@ -87,9 +90,7 @@ export function AdminDataTable<T>({
                       onClick={() => handleSort(column.id)}
                     >
                       {column.label}
-                      <span aria-hidden="true">
-                        {sortColumnId === column.id ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
-                      </span>
+                      <span aria-hidden="true">{getSortIndicator(column.id)}</span>
                     </button>
                   ) : (
                     column.label

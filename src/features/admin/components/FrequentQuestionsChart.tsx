@@ -16,7 +16,7 @@ interface FrequentQuestionsChartProps {
 
 const FrequentQuestionsChart: React.FC<FrequentQuestionsChartProps> = ({ data }) => {
   const topQuestions = data.slice(0, 6).map((item) => ({
-    shortQuestion: item.question.length > 34 ? `${item.question.slice(0, 34)}...` : item.question,
+    shortQuestion: item.question.length > 32 ? `${item.question.slice(0, 32)}...` : item.question,
     count: item.count,
   }));
 
@@ -25,22 +25,23 @@ const FrequentQuestionsChart: React.FC<FrequentQuestionsChartProps> = ({ data })
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <BarChart data={topQuestions} layout="vertical" margin={{ left: 12 }}>
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={topQuestions} layout="vertical" margin={{ left: 8, right: 8 }}>
         <CartesianGrid horizontal={false} stroke="#e8ebef" strokeDasharray="4 4" />
-        <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
+        <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
         <YAxis
           type="category"
           dataKey="shortQuestion"
-          width={180}
+          width={168}
           tickLine={false}
           axisLine={false}
+          tick={{ fontSize: 12 }}
         />
         <Tooltip
-          contentStyle={{ borderRadius: 12, border: '1px solid #d9dde3' }}
+          contentStyle={{ borderRadius: 8, border: '1px solid #d9dde3' }}
           formatter={(value) => [`${value ?? 0}`, 'Consultas']}
         />
-        <Bar dataKey="count" fill="#0f9d58" radius={[0, 10, 10, 0]} />
+        <Bar dataKey="count" fill="#0f766e" radius={[0, 6, 6, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

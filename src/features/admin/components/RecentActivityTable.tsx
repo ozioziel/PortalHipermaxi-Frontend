@@ -1,31 +1,43 @@
 import React from 'react';
 
-const RecentActivityTable: React.FC<{ items: any[] }> = ({ items }) => {
+interface RecentActivityItem {
+  userEmail?: string;
+  userId?: string;
+  module: string;
+  action: string;
+  createdAt: string;
+}
+
+interface RecentActivityTableProps {
+  items: RecentActivityItem[];
+}
+
+const RecentActivityTable: React.FC<RecentActivityTableProps> = ({ items }) => {
   return (
-    <div style={{ overflow: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div className="admin-table-shell__scroller">
+      <table className="admin-table">
         <thead>
           <tr>
-            <th style={{ textAlign: 'left', padding: 8 }}>Usuario</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Módulo</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Acción</th>
-            <th style={{ textAlign: 'left', padding: 8 }}>Fecha</th>
+            <th>Usuario</th>
+            <th>Módulo</th>
+            <th>Acción</th>
+            <th>Fecha</th>
           </tr>
         </thead>
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={4} style={{ padding: 12, color: 'var(--text-muted)' }}>
+              <td colSpan={4} className="admin-table__empty">
                 No hay actividad reciente.
               </td>
             </tr>
           ) : (
-            items.map((it: any, idx: number) => (
-              <tr key={idx}>
-                <td style={{ padding: 8 }}>{it.userEmail || it.userId}</td>
-                <td style={{ padding: 8 }}>{it.module}</td>
-                <td style={{ padding: 8 }}>{it.action}</td>
-                <td style={{ padding: 8 }}>{new Date(it.createdAt).toLocaleString()}</td>
+            items.map((item, index) => (
+              <tr key={`${item.createdAt}-${index}`}>
+                <td>{item.userEmail || item.userId}</td>
+                <td>{item.module}</td>
+                <td>{item.action}</td>
+                <td>{new Date(item.createdAt).toLocaleString('es-BO')}</td>
               </tr>
             ))
           )}

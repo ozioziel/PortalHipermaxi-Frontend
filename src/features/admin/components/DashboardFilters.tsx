@@ -25,6 +25,13 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 }) => {
   return (
     <section className="admin-filters">
+      <div className="admin-filters__header">
+        <div>
+          <h3>Filtros del dashboard</h3>
+          <p>Ajusta el rango, módulo, tipo de evento y usuario antes de revisar métricas.</p>
+        </div>
+      </div>
+
       <div className="admin-filters__preset-row">
         {ADMIN_DATE_PRESET_OPTIONS.map((option) => (
           <button

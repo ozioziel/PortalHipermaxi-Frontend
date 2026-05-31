@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useRealtimeVoiceAssistant } from '../hooks/useRealtimeVoiceAssistant';
 import { useSupportPanel } from '../features/support/SupportPanelContext';
 import '../styles/assistant.css';
-import ChatFallbackSupport from './ui/ChatFallbackSupport';
 
 const statusText = {
   idle: 'Listo para iniciar',
@@ -13,7 +12,7 @@ const statusText = {
 };
 
 const VoiceAssistantButton: React.FC = () => {
-  const { status, error, start, stop, fallbackVisible } = useRealtimeVoiceAssistant();
+  const { status, start, stop } = useRealtimeVoiceAssistant();
   const { open: supportOpen } = useSupportPanel();
   const [guidedStepsActive, setGuidedStepsActive] = useState(false);
   const active = status !== 'idle' && status !== 'error';
@@ -39,12 +38,6 @@ const VoiceAssistantButton: React.FC = () => {
       {active && (
         <div className="voice-assistant-panel active">
           <strong>{statusText[status]}</strong>
-        </div>
-      )}
-
-      {(fallbackVisible || (!active && error)) && (
-        <div className="voice-assistant-panel">
-          <ChatFallbackSupport />
         </div>
       )}
 

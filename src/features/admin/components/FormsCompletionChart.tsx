@@ -21,15 +21,15 @@ const FormsCompletionChart: React.FC<FormsCompletionChartProps> = ({ data }) => 
   }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data}>
         <CartesianGrid vertical={false} stroke="#e8ebef" strokeDasharray="4 4" />
-        <XAxis dataKey="label" tickLine={false} axisLine={false} />
-        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #d9dde3' }} />
-        <Legend />
-        <Bar dataKey="started" name="Iniciados" fill="#f9a826" radius={[10, 10, 0, 0]} />
-        <Bar dataKey="completed" name="Completados" fill="#0f9d58" radius={[10, 10, 0, 0]} />
+        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+        <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+        <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #d9dde3' }} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Bar dataKey="started" name="Iniciados" fill="#d97706" radius={[6, 6, 0, 0]} />
+        <Bar dataKey="completed" name="Completados" fill="#0f766e" radius={[6, 6, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

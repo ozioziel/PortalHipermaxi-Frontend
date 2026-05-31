@@ -16,12 +16,12 @@ interface AiUsageChartProps {
 }
 
 const getColor = (label: string) => {
-  if (label.includes('Errores')) return '#e05a47';
-  if (label.includes('Fallback')) return '#f9a826';
-  if (label.includes('WhatsApp')) return '#0f9d58';
-  if (label.includes('Correo')) return '#f66014';
-  if (label.includes('Llamada')) return '#334155';
-  return '#0f9d58';
+  if (label.includes('Errores')) return '#dc2626';
+  if (label.includes('Fallback')) return '#d97706';
+  if (label.includes('WhatsApp')) return '#059669';
+  if (label.includes('Correo')) return '#2563eb';
+  if (label.includes('Llamada')) return '#475569';
+  return '#0f766e';
 };
 
 const AiUsageChart: React.FC<AiUsageChartProps> = ({ data }) => {
@@ -30,16 +30,16 @@ const AiUsageChart: React.FC<AiUsageChartProps> = ({ data }) => {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data}>
         <CartesianGrid vertical={false} stroke="#e8ebef" strokeDasharray="4 4" />
-        <XAxis dataKey="label" tickLine={false} axisLine={false} />
-        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+        <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
         <Tooltip
-          contentStyle={{ borderRadius: 12, border: '1px solid #d9dde3' }}
+          contentStyle={{ borderRadius: 8, border: '1px solid #d9dde3' }}
           formatter={(value) => [`${value ?? 0}`, 'Eventos']}
         />
-        <Bar dataKey="count" radius={[10, 10, 0, 0]}>
+        <Bar dataKey="count" radius={[6, 6, 0, 0]}>
           {data.map((entry) => (
             <Cell key={entry.label} fill={getColor(entry.label)} />
           ))}

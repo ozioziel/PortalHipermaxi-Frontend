@@ -13,7 +13,7 @@ interface EventsByTypeChartProps {
   data: CountByLabel[];
 }
 
-const COLORS = ['#f66014', '#0f9d58', '#f9a826', '#334155', '#ff9f6b', '#4b8a5b', '#d94f30', '#94a3b8'];
+const COLORS = ['#2563eb', '#0f766e', '#d97706', '#7c3aed', '#059669', '#dc2626', '#475569', '#0891b2'];
 
 const EventsByTypeChart: React.FC<EventsByTypeChartProps> = ({ data }) => {
   if (data.every((item) => item.count === 0)) {
@@ -27,8 +27,8 @@ const EventsByTypeChart: React.FC<EventsByTypeChartProps> = ({ data }) => {
           data={data}
           dataKey="count"
           nameKey="label"
-          innerRadius={70}
-          outerRadius={106}
+          innerRadius={66}
+          outerRadius={102}
           paddingAngle={3}
         >
           {data.map((entry, index) => (
@@ -36,10 +36,10 @@ const EventsByTypeChart: React.FC<EventsByTypeChartProps> = ({ data }) => {
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{ borderRadius: 12, border: '1px solid #d9dde3' }}
+          contentStyle={{ borderRadius: 8, border: '1px solid #d9dde3' }}
           formatter={(value) => [`${value ?? 0}`, 'Eventos']}
         />
-        <Legend />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
       </PieChart>
     </ResponsiveContainer>
   );
