@@ -627,6 +627,24 @@ export const startProductCreationGuide = (): AssistantActionResult => {
   };
 };
 
+export const startNewProductFlow = (): AssistantActionResult => {
+  navigateTo('/productos');
+  delayedClick('new-product', window.location.pathname === '/productos' ? 220 : 700);
+  showGlobalMessage('Nuevo producto: dime la descripcion del producto para empezar.');
+
+  return {
+    ok: true,
+    message: 'Bueno, creemos un nuevo producto. Que quieres poner en la descripcion del producto?',
+    data: {
+      route: '/productos',
+      action: 'new-product',
+      flow: 'new_product',
+      nextPrompt: 'Bueno, creemos un nuevo producto. Que quieres poner en la descripcion del producto?',
+      deactivateVoiceAssistant: false,
+    },
+  };
+};
+
 export const startNewOrderFlow = (): AssistantActionResult => {
   navigateTo('/avd');
   showGlobalMessage('Nuevo pedido: dime la descripcion del pedido para empezar.');
@@ -745,24 +763,18 @@ export const performTask = (task: string, value?: string): AssistantActionResult
   }
 
   if (
-    (normalizedTask.includes('nuevo') || normalizedTask.includes('agregar') || normalizedTask.includes('crear')) &&
+    (normalizedTask.includes('nuevo') || normalizedTask.includes('agregar') || normalizedTask.includes('anad') || normalizedTask.includes('crear')) &&
     normalizedTask.includes('producto') &&
-    (normalizedTask.includes('guia') || normalizedTask.includes('guiada') || normalizedTask.includes('paso'))
+    (normalizedTask.includes('guia') || normalizedTask.includes('guiada') || normalizedTask.includes('paso') || normalizedTask.includes('soporte') || normalizedTask.includes('ayuda'))
   ) {
     return startProductCreationGuide();
   }
 
   if (
-    (normalizedTask.includes('nuevo') || normalizedTask.includes('agregar') || normalizedTask.includes('crear')) &&
+    (normalizedTask.includes('nuevo') || normalizedTask.includes('agregar') || normalizedTask.includes('anad') || normalizedTask.includes('crear')) &&
     normalizedTask.includes('producto')
   ) {
-    navigateTo('/productos');
-    delayedClick('new-product', window.location.pathname === '/productos' ? 250 : 650);
-    return {
-      ok: true,
-      message: 'Estoy abriendo la seccion de productos y el formulario de nuevo producto.',
-      data: { route: '/productos', action: 'new-product' },
-    };
+    return startNewProductFlow();
   }
 
   if (normalizedTask.includes('producto') && normalizedTask.includes('seccion')) {
@@ -847,6 +859,8 @@ export const executeAssistantAction = async (actionName: string, args: Record<st
           };
         }) : [],
       );
+    case 'start_new_product_flow':
+      return startNewProductFlow();
     case 'start_product_creation_guide':
       return startProductCreationGuide();
     case 'start_new_order_flow':
