@@ -19,6 +19,12 @@ interface SupplierFormGuideOverlayProps {
   onToggleVoice: () => void;
 }
 
+const scrimStyle: React.CSSProperties = {
+  position: 'fixed',
+  background: 'rgba(15, 23, 42, 0.64)',
+  pointerEvents: 'none',
+};
+
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 const buildTooltipPosition = (
@@ -116,32 +122,32 @@ export const SupplierFormGuideOverlay: React.FC<SupplierFormGuideOverlayProps> =
         pointerEvents: 'none',
       }}
     >
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.64)',
-          pointerEvents: 'none',
-        }}
-      />
-
       {highlightRect ? (
-        <div
-          style={{
-            position: 'fixed',
-            top: highlightRect.top,
-            left: highlightRect.left,
-            width: highlightRect.width,
-            height: highlightRect.height,
-            borderRadius: 12,
-            border: '3px solid #f66014',
-            boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.96), 0 0 28px rgba(246, 96, 20, 0.7)',
-            background: 'rgba(255, 255, 255, 0.04)',
-            pointerEvents: 'none',
-            zIndex: 2301,
-          }}
-        />
-      ) : null}
+        <>
+          {/* Cuatro velos alrededor del campo dejan un hueco real: el campo
+              resaltado queda iluminado en vez de oscurecido por el velo. */}
+          <div style={{ ...scrimStyle, top: 0, left: 0, right: 0, height: Math.max(highlightRect.top, 0) }} />
+          <div style={{ ...scrimStyle, top: highlightRect.top + highlightRect.height, left: 0, right: 0, bottom: 0 }} />
+          <div style={{ ...scrimStyle, top: highlightRect.top, left: 0, width: Math.max(highlightRect.left, 0), height: highlightRect.height }} />
+          <div style={{ ...scrimStyle, top: highlightRect.top, left: highlightRect.left + highlightRect.width, right: 0, height: highlightRect.height }} />
+          <div
+            style={{
+              position: 'fixed',
+              top: highlightRect.top,
+              left: highlightRect.left,
+              width: highlightRect.width,
+              height: highlightRect.height,
+              borderRadius: 12,
+              border: '3px solid #f66014',
+              boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.96), 0 0 28px rgba(246, 96, 20, 0.7)',
+              pointerEvents: 'none',
+              zIndex: 2301,
+            }}
+          />
+        </>
+      ) : (
+        <div style={{ ...scrimStyle, inset: 0 }} />
+      )}
 
       <aside
         style={{

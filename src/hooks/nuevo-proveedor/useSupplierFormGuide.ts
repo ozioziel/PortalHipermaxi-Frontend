@@ -44,7 +44,7 @@ const supplierGuideSteps: SupplierFormGuideStep[] = [
   },
   {
     id: 'hub-contact',
-    selector: '[data-guide="supplier-hub"]',
+    selector: '[data-guide="supplier-hub"], [data-guide="supplier-hub-section"], [data-tour="supplier-hub-section"]',
     sectionIndex: 1,
     title: 'Encargado HUB',
     message: 'El Encargado HUB es el contacto autorizado para recibir las credenciales del portal.',
@@ -58,14 +58,14 @@ const supplierGuideSteps: SupplierFormGuideStep[] = [
   },
   {
     id: 'provider-code',
-    selector: '[data-guide="supplier-code"]',
+    selector: '[data-guide="supplier-code"], [data-tour="supplier-code-input"]',
     sectionIndex: 2,
     title: 'Codigo de proveedor',
     message: 'Ingrese el codigo proveedor relacionado con su empresa.',
   },
   {
     id: 'region',
-    selector: '[data-guide="supplier-region"]',
+    selector: '[data-guide="supplier-region"], [data-tour="supplier-region-input"]',
     sectionIndex: 2,
     title: 'Region',
     message: 'Seleccione la region correspondiente a la operacion del proveedor.',

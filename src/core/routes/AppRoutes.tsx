@@ -36,7 +36,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="/productos/nuevo" element={<ProtectedRoute allowedRoles={["cliente"]}><ProductCreatePage /></ProtectedRoute>} />
         <Route path="/facturas" element={<ProtectedRoute allowedRoles={["cliente"]}><FacturasPage /></ProtectedRoute>} />
         <Route path="/avd" element={<ProtectedRoute allowedRoles={["cliente"]}><AvdPage /></ProtectedRoute>} />
-        <Route path="/nuevo-proveedor" element={<ProtectedRoute allowedRoles={["cliente"]}><NuevoProveedorPage /></ProtectedRoute>} />
+        {/* Publica: un proveedor nuevo aun no tiene cuenta, este formulario
+            es justamente para solicitar sus credenciales de acceso. */}
+        <Route path="/nuevo-proveedor" element={<NuevoProveedorPage />} />
         <Route path="/proveedor/acceso" element={<Navigate to="/nuevo-proveedor" replace />} />
         <Route path="/proveedor/registro" element={<Navigate to="/nuevo-proveedor" replace />} />
         <Route path="/proveedor/exito" element={<Navigate to="/nuevo-proveedor" replace />} />

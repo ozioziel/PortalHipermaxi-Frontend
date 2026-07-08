@@ -22,6 +22,7 @@ type UiElementSummary = {
   type?: string;
   placeholder?: string;
   aliases: string[];
+  error?: string;
 };
 
 const assistantUiClass = 'assistant-dom-highlight';
@@ -145,17 +146,44 @@ const elementAliases = (element: HTMLElement) =>
     compact(element.textContent),
   ].filter(Boolean) as string[];
 
-const summarizeField = (element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): UiElementSummary => ({
-  elementId: elementId(element),
-  kind: 'field',
-  label: fieldLabel(element),
-  value: element instanceof HTMLInputElement && element.type === 'password' ? '[oculto]' : compact(element.value, 80),
-  empty: !element.value,
-  required: element.required,
-  type: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
-  placeholder: element.getAttribute('placeholder') || '',
-  aliases: elementAliases(element),
-});
+// Text colors the forms use for validation errors (#dc2626, #ef4444, #b91c1c).
+const ERROR_RED = new Set(['rgb(220, 38, 38)', 'rgb(239, 68, 68)', 'rgb(185, 28, 28)']);
+
+// Reads the on-screen validation error tied to a field so the assistant can
+// "see" exactly what the user sees. Matches tagged errors
+// ([data-ai-error], [role="alert"], .error, .field-error) and the red inline-styled
+// <span> the forms render next to each input.
+const fieldErrorText = (element: HTMLElement): string => {
+  const wrapper = element.closest('[data-ai-field]') || element.closest('div') || element.parentElement;
+  if (!wrapper) return '';
+  const nodes = wrapper.querySelectorAll<HTMLElement>('[data-ai-error], [role="alert"], .error, .field-error, span, p, small');
+  for (const node of Array.from(nodes)) {
+    if (node.querySelector('input, textarea, select')) continue; // skip containers
+    if (node.closest('label')) continue; // skip labels / help tooltips
+    const text = node.textContent?.trim();
+    if (!text) continue;
+    if (node.matches('[data-ai-error], [role="alert"], .error, .field-error')) return text;
+    const color = (node.style.color || getComputedStyle(node).color).replace(/\s+/g, ' ').trim();
+    if (ERROR_RED.has(color)) return text;
+  }
+  return '';
+};
+
+const summarizeField = (element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): UiElementSummary => {
+  const error = fieldErrorText(element);
+  return {
+    elementId: elementId(element),
+    kind: 'field',
+    label: fieldLabel(element),
+    value: element instanceof HTMLInputElement && element.type === 'password' ? '[oculto]' : compact(element.value, 80),
+    empty: !element.value,
+    required: element.required,
+    type: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
+    placeholder: element.getAttribute('placeholder') || '',
+    aliases: elementAliases(element),
+    ...(error ? { error } : {}),
+  };
+};
 
 const summarizeButton = (element: HTMLButtonElement | HTMLAnchorElement): UiElementSummary => ({
   elementId: elementId(element),
@@ -299,6 +327,10 @@ export const getPageContext = (): AssistantActionResult => {
       aliases: elementAliases(element),
     }));
 
+  const errors = fields
+    .filter((field) => field.error)
+    .map((field) => ({ elementId: field.elementId, label: field.label, error: field.error as string }));
+
   return {
     ok: true,
     data: {
@@ -308,7 +340,9 @@ export const getPageContext = (): AssistantActionResult => {
       fields,
       actions,
       sections,
-      instruction: 'Usa elementId para ejecutar focus_field, fill_field, highlight_field o click_element. No muestres elementId al usuario.',
+      errors,
+      hasErrors: errors.length > 0,
+      instruction: 'Usa elementId para ejecutar focus_field, fill_field, highlight_field o click_element. No muestres elementId al usuario. Si "errors" no esta vacio, el formulario tiene errores visibles: explica al usuario que corregir en cada campo.',
     },
   };
 };
@@ -763,20 +797,32 @@ export const getFormState = (): AssistantActionResult => {
 };
 
 export const validateVisibleForm = (): AssistantActionResult => {
+  // Reads BOTH HTML5 constraint errors and the custom on-screen errors the
+  // React forms render (red spans), so the assistant sees what the user sees.
   const invalid = getVisibleFields()
-    .filter((element) => !element.checkValidity())
-    .map((element) => ({
-      fieldId: elementId(element),
-      label: fieldLabel(element),
-      message: element.validationMessage || 'Campo invalido.',
+    .map((element) => {
+      const message = !element.checkValidity()
+        ? (element.validationMessage || 'Campo invalido.')
+        : fieldErrorText(element);
+      return { element, message };
+    })
+    .filter((item) => item.message)
+    .map((item) => ({
+      fieldId: elementId(item.element),
+      label: fieldLabel(item.element),
+      message: item.message,
     }));
 
   if (invalid.length) {
     focusField(invalid[0].fieldId, invalid[0].message);
-    return { ok: false, data: { invalid }, message: 'Hay campos invalidos.' };
+    return {
+      ok: false,
+      data: { invalid },
+      message: `Hay ${invalid.length} campo(s) con error: ${invalid.map((item) => item.label).join(', ')}.`,
+    };
   }
 
-  return { ok: true, data: { invalid: [] }, message: 'No encontre errores visibles con validacion HTML.' };
+  return { ok: true, data: { invalid: [] }, message: 'El formulario no tiene errores visibles.' };
 };
 
 export const goToNextError = (): AssistantActionResult => {
@@ -785,8 +831,17 @@ export const goToNextError = (): AssistantActionResult => {
     return focusField(elementId(htmlInvalid), htmlInvalid.validationMessage || 'Corrige este campo.');
   }
 
-  const visualError = document.querySelector<HTMLElement>('.field-error,.error,[role="alert"]');
-  const relatedField = visualError?.closest('.field')?.querySelector<HTMLElement>('input, textarea, select');
+  const fieldWithError = getVisibleFields()
+    .map((element) => ({ element, error: fieldErrorText(element) }))
+    .find((item) => item.error);
+  if (fieldWithError) {
+    return focusField(elementId(fieldWithError.element), fieldWithError.error);
+  }
+
+  const visualError = document.querySelector<HTMLElement>('[data-ai-error],.field-error,.error,[role="alert"]');
+  const relatedField = visualError
+    ?.closest('.field, [data-ai-field], div')
+    ?.querySelector<HTMLElement>('input, textarea, select');
   if (relatedField) {
     return focusField(elementId(relatedField), visualError?.textContent?.trim() || 'Corrige este campo.');
   }
@@ -964,6 +1019,45 @@ export const authGetSession = (): AssistantActionResult => {
 // ─── Navigation ──────────────────────────────────────────────────────────────
 
 const VALID_ROUTES = ['/', '/productos', '/facturas', '/avd', '/nuevo-proveedor', '/admin/dashboard', '/admin/trazabilidad', '/admin/preguntas-frecuentes', '/admin/interacciones-ia', '/admin/actividad-usuarios'];
+
+// ─── Multi-step form (wizard) ──────────────────────────────────────────────────
+// Advancing a step-by-step form is internal React state (the "Siguiente"/"Anterior"
+// buttons), NOT a route. These give the assistant a first-class way to move between
+// steps so "ir a la siguiente seccion" no longer gets mistaken for page navigation.
+
+const findFormNavButton = (kind: 'next' | 'prev'): HTMLButtonElement | null => {
+  const tagged = kind === 'next' ? '[data-tour="next-button"]' : '[data-tour="back-button"]';
+  const byTag = document.querySelector<HTMLButtonElement>(tagged);
+  if (byTag && visible(byTag) && !byTag.disabled) return byTag;
+
+  const texts = kind === 'next' ? ['siguiente', 'continuar'] : ['anterior', 'atras', 'volver'];
+  const byText = getVisibleButtons().find((element) => {
+    if (!(element instanceof HTMLButtonElement) || element.disabled) return false;
+    const label = normalize(element.textContent || '');
+    return texts.some((text) => label === text || label.startsWith(text));
+  });
+  return (byText as HTMLButtonElement) || null;
+};
+
+const moveFormSection = (kind: 'next' | 'prev'): AssistantActionResult => {
+  const button = findFormNavButton(kind);
+  if (!button) {
+    return kind === 'next'
+      ? { ok: false, message: 'No hay un paso siguiente en esta pantalla. Si es el ultimo paso, pide confirmacion antes de enviar.' }
+      : { ok: false, message: 'No hay un paso anterior en esta pantalla.' };
+  }
+  button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  highlight(button);
+  button.click();
+  return {
+    ok: true,
+    message: kind === 'next' ? 'Avance al siguiente paso del formulario.' : 'Volvi al paso anterior del formulario.',
+    data: { clicked: button.textContent?.trim() || '' },
+  };
+};
+
+export const nextFormSection = (): AssistantActionResult => moveFormSection('next');
+export const previousFormSection = (): AssistantActionResult => moveFormSection('prev');
 
 export const navGoToPage = (route: string, reason?: string): AssistantActionResult => {
   if (!VALID_ROUTES.includes(route)) {
@@ -1334,6 +1428,11 @@ export const executeAssistantAction = async (actionName: string, args: Record<st
       return autofillFromUserMessage(String(args.message || ''));
     case 'perform_task':
       return performTask(String(args.task || ''), args.value ? String(args.value) : undefined);
+    // Multi-step form (wizard)
+    case 'next_section':
+      return nextFormSection();
+    case 'previous_section':
+      return previousFormSection();
     // Navigation
     case 'nav_go_to_page':
       return navGoToPage(String(args.route || '/'), args.reason ? String(args.reason) : undefined);
